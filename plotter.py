@@ -1,104 +1,81 @@
 import matplotlib.pyplot as plt
 import librosa
 import numpy as np
-from Beat_BPM import extract as _extract_beats
+from audio import audio
 
 
-def plot_beats_with_onset_background(audio_path=None, y=None, sr=None, beat_times=None, hop_length=512, show=True, save_path=None, bpm=None):
-	"""
-	Plot the waveform with the onset envelope shown as a faint background and beats as vertical red lines.
+def plot_audio_onsets_beats(a: audio, start: float = None, end: float = None, figsize=(12, 6), save_path: str = None):
+	"""Plot an audio instance's waveform, onset envelope and beat markers in time.
 
 	Parameters
-	----------
-	audio_path : str, optional
-		Path to an audio file. If provided, `y` and `sr` are ignored and audio will be loaded from this path.
-	y : np.ndarray, optional
-		Audio time series. Required if `audio_path` is None.
-	sr : int, optional
-		Sampling rate of `y`. Required if `audio_path` is None.
-	beat_times : array-like, optional
-		Beat times in seconds. If None and `audio_path` is provided, beats will be computed using `Beat_BPM.extract`.
-	hop_length : int, optional
-		Hop length used when computing onset strength (default 512).
-	show : bool, optional
-		If True, calls `plt.show()` after plotting.
-	save_path : str, optional
-		If given, the figure will be saved to this path.
+	- a: `audio` instance (must have `signal`, `sr`, `hop_length`, and `beats` filled).
+	- start, end: optional start/end times in seconds to zoom the plot.
+	- figsize: figure size tuple.
+	- save_path: optional path to save the figure (PNG, etc.). If None, the figure is shown.
 
-	Behavior
-	--------
-	- Draws the onset-strength envelope as a faint filled area in the background of the waveform plot.
-	- Draws beats as vertical red lines across the waveform.
+	Returns the matplotlib `fig, axes` tuple.
 	"""
+	if a.signal is None or a.sr is None:
+		raise ValueError("Audio instance has no loaded signal or sampling rate.")
 
-	if audio_path is not None:
-		y, sr = librosa.load(audio_path, sr=None)
-	elif y is None or sr is None:
-		raise ValueError("Either audio_path or both y and sr must be provided.")
+	# Compute onset envelope (frames -> times)
+	onset_env = librosa.onset.onset_strength(y=a.signal, sr=a.sr, hop_length=a.hop_length)
+	onset_times = librosa.frames_to_time(np.arange(len(onset_env)), sr=a.sr, hop_length=a.hop_length)
 
-	# BPM may be provided by the caller (bpm). Initialize local BPM variable.
-	BPM = None
-	if beat_times is None and audio_path is not None:
-		beat_times, __ = _extract_beats(audio_path)
+	# Waveform times
+	wave_times = np.arange(len(a.signal)) / float(a.sr)
+
+	# Optionally crop by start/end
+	if start is not None or end is not None:
+		s = 0 if start is None else float(start)
+		e = wave_times[-1] if end is None else float(end)
+		# Mask waveform
+		wave_mask = (wave_times >= s) & (wave_times <= e)
+		wave_times = wave_times[wave_mask]
+		wave_signal = a.signal[wave_mask]
+		# Mask onset envelope
+		onset_mask = (onset_times >= s) & (onset_times <= e)
+		onset_times = onset_times[onset_mask]
+		onset_env = onset_env[onset_mask]
+		# Mask beats
+		beats = np.array([]) if a.beats is None else np.array(a.beats)
+		beats = beats[(beats >= s) & (beats <= e)]
 	else:
-		# If caller provided bpm explicitly, use it
-		if bpm is not None:
-			BPM = bpm
+		wave_signal = a.signal
+		beats = np.array([]) if a.beats is None else np.array(a.beats)
 
-	# Compute onset envelope
-	onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length)
-	frames = np.arange(len(onset_env))
-	times_env = librosa.frames_to_time(frames, sr=sr, hop_length=hop_length)
+	# Create plot: top = onset envelope, bottom = waveform (share x)
+	fig, axes = plt.subplots(2, 1, figsize=figsize, sharex=True, gridspec_kw={"height_ratios": [1, 1.2]})
 
-	# Prepare figure
-	fig, ax = plt.subplots(figsize=(12, 3.5))
+	# Top: onset envelope
+	ax_env = axes[0]
+	ax_env.plot(onset_times, onset_env, color="C1", label="Onset envelope")
+	if beats.size:
+		ax_env.vlines(beats, 0, onset_env.max() if onset_env.size else 1.0, color="C2", alpha=0.7, linestyle="--", label="Beats")
+	ax_env.set_ylabel("Onset strength")
+	ax_env.legend(loc="upper right")
 
-	# Map onset envelope to waveform amplitude range so it appears as a background texture
-	y_min, y_max = float(np.min(y)), float(np.max(y))
-	amp_range = y_max - y_min if (y_max - y_min) > 0 else 1.0
-	if onset_env.max() > 0:
-		env_norm = onset_env / float(onset_env.max())
-	else:
-		env_norm = onset_env * 0.0
-	# Scale envelope to a fraction of amplitude range and shift to sit above ymin
-	env_mapped = y_min + env_norm * amp_range * 0.6
-
-	# Fill onset background (low alpha)
-	ax.fill_between(times_env, y_min, env_mapped, color='C0', alpha=0.18, step='pre')
-
-	# Waveform on top
-	times_wave = np.arange(len(y)) / float(sr)
-	ax.plot(times_wave, y, color='k', linewidth=0.6, zorder=2)
-
-	# Beats as vertical red lines
-	if beat_times is not None and len(beat_times) > 0:
-		ax.vlines(beat_times, ymin=y_min, ymax=y_max, color='r', linewidth=1.2, alpha=0.9, zorder=3)
-
-	ax.set_xlim(times_wave[0], times_wave[-1])
-	ax.set_xlabel('Time (s)')
-	ax.set_ylabel('Amplitude')
-	ax.set_title(f'Song Waveform - BPM = {bpm if bpm is not None else "unknown"}')
-
-	ax.set_xlim(times_wave[0], times_wave[-1])
-
-	# Create a legend using proxy artists (fill_between doesn't create an automatic legend entry reliably)
-	from matplotlib.patches import Patch
-	from matplotlib.lines import Line2D
-
-	handles = [Patch(facecolor='C0', alpha=0.18, label='Onset envelope'),
-			   Line2D([0], [0], color='k', lw=0.6, label='Waveform'),
-			   Line2D([0], [0], color='r', lw=1.2, label='Beats')]
-	ax.legend(handles=handles, loc='upper right')
+	# Bottom: waveform
+	ax_wave = axes[1]
+	ax_wave.plot(wave_times, wave_signal, color="0.3", linewidth=0.6)
+	if beats.size:
+		ax_wave.vlines(beats, wave_signal.min(), wave_signal.max(), color="C2", alpha=0.6, linestyle="--")
+	ax_wave.set_xlabel("Time (s)")
+	ax_wave.set_ylabel("Amplitude")
 
 	plt.tight_layout()
+
 	if save_path:
-		plt.savefig(save_path, dpi=200)
-	if show:
-		plt.show()
-	plt.close(fig)
+		fig.savefig(save_path, dpi=150)
+
+	plt.show()
+	return fig, axes
 
 
-__all__ = ['plot_beats_with_onset_background']
+
+
+
+
 
 
 

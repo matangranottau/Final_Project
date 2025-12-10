@@ -1,6 +1,8 @@
 import numpy as np
 from audio import audio
 
-def BPM_preprocssing(audio, cadence)
+def BPM_preprocssing(audio, cadence):
+    r = audio.BPM / cadence.srm
+    return r
     
     

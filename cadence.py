@@ -1,11 +1,11 @@
 import numpy as np
-from audio import audio
+from oop import wave
 
 class cadence:
     def __init__(self):
         self.signal = None  # Numpy array of cadence signal
         self.sr = None  # Sampling rate of cadence signal
-        self.srm = None # Steps per minute
+        self.spm = None # Steps per minute
         self.time = None  # Time axis (seconds)
         self.signals = {}  # Dictionary with 5 synthetic patterns
         self.default_duration = 60  # seconds
@@ -177,8 +177,8 @@ class cadence:
         duration_s = len(self.signal) / float(self.sr)
 
         if duration_s == 0:
-            self.srm = 0.0
+            self.spm = 0.0
         else:
-            self.srm = n_steps * 60.0 / duration_s
+            self.spm = n_steps * 60.0 / duration_s
 
-        return self.srm
+        return self.spm

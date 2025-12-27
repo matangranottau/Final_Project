@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import librosa
 import numpy as np
-from audio import audio
+from oop import wave
 
 
-def plot_audio_onsets_beats(a: audio, start: float = None, end: float = None, figsize=(12, 6), save_path: str = None):
+def plot_audio_onsets_beats(a: wave, start: float = None, end: float = None, figsize=(12, 6), save_path: str = None):
 	"""Plot an audio instance's waveform, onset envelope and beat markers in time.
 
 	Parameters

@@ -3,7 +3,7 @@ import numpy as np
 
 
 
-class audio:
+class wave:
     def __init__(self, path, sr=None, hop_length=512):
         self.path = path
         self.signal = None 

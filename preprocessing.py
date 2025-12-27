@@ -5,14 +5,14 @@ from librosa import time_to_samples, samples_to_time
 from librosa.beat import beat_track
 
 def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0.02): #OFFLINE ONLY!!
-    # Assumption 1: cadence is from wave class and not cadence class
+    # Assumption 1: both song cadence is from wave class and not cadence class
     # Assumption 2: cadence is offline
     # Assumption 3: audio and cadence are with exact same length (in samples)
     # Assumption 4: audio and cadence has same sr
     
   
     if not (type(cadence) is wave):
-        raise ValueError("Cadence is not audio type")
+        raise ValueError("Cadence is not wave type")
     
     if (cadence.sr != song.sr):
         raise ValueError("Not Same sr")

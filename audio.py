@@ -11,9 +11,14 @@ class audio:
         self.beats = None 
         self.BPM = None
         self.hop_length = hop_length
+        self.length = None
+        self.sample_length = None
+        self.r_list=[]
 
     def load(self):
         self.signal, self.sr = librosa.load(self.path, sr=None)
+        self.sample_length = self.signal.size
+        self.length = self.sample_length / self.sr
         
 
     def extract(self):

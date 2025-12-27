@@ -14,3 +14,4 @@ plot_audio_onsets_beats(song, start=30.0, end=60.0, save_path="Plots/seven_natio
 # Add clicks on beats and save to WAV
 clicks = song.add_clicks()
 write("clicks.wav", song.sr, clicks)
+

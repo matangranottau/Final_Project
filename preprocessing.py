@@ -14,6 +14,9 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
     if not (type(cadence) is wave):
         raise ValueError("Cadence is not wave type")
     
+    if not (type(song) is wave):
+        raise ValueError("Song is not wave type")
+    
     if (cadence.sr != song.sr):
         raise ValueError("Not Same sr")
     

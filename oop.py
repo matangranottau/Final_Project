@@ -33,11 +33,11 @@ class wave:
         
         self.BPM = tempo
 
-    def add_clicks(self, magnitude=1, click_ms = 2, click_decay = 4):
+    def add_clicks(self, magnitude=10, click_ms = 2, click_decay = 4):
         # Convert time of beats to impulse array
         beats = np.zeros(self.signal.shape)
         indices = (self.beats * self.sr).astype(int)
-        beats[indices] = magnitude * np.max(np.abs(self.signal))
+        beats[indices] = np.max(np.abs(self.signal))
 
         # Click kernel
         click_len = int(0.001 * click_ms * self.sr)
@@ -45,6 +45,6 @@ class wave:
         kernel = np.exp(-n / (0.0001 * click_decay * self.sr))
         clicks = np.convolve(beats, kernel, mode='same')
 
-        return self.signal + clicks
+        return self.signal/magnitude + clicks
 
 

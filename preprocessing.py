@@ -49,7 +49,7 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
             start_idx = clip(time_to_samples(current_time - W, sr), 0, N) 
             stop_idx = clip(time_to_samples(current_time, sr), 0, N) 
 
-            start_idx = clip(start_idx)
+            start_idx = clip(start_idx, 0, N)
 
             cadence_signal_chunk = (cadence.signal)[start_idx:stop_idx] # Get the chunk from the cadence signal
             SPM_tilde, _  = beat_track(y=cadence_signal_chunk, sr=sr, hop_length=cadence.hop_length)

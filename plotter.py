@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import librosa
 import numpy as np
 from oop import wave
+from cadence import cadence
 
 
 def plot_audio_onsets_beats(a: wave, start: float = None, end: float = None, figsize=(12, 6), save_path: str = None):
@@ -72,7 +73,64 @@ def plot_audio_onsets_beats(a: wave, start: float = None, end: float = None, fig
 	return fig, axes
 
 
+def plot_cadence_pattern(c: cadence,pattern_name: str = "slow_smooth_change", figsize=(12, 6), save_path: str = None):
+    """
 
+
+    Parameters
+
+    - c : cadence A cadence instance with create_cadence() already called.
+    - pattern_name : exercise pattern
+    - figsize : tupleFigure size.
+    - save_path : str or None Optional path to save the figure. If None, just shows it.
+    """
+    if not c.signals or c.time is None:
+        raise ValueError("Cadence instance has no signals. ")
+                         
+    if pattern_name not in c.signals:
+        raise ValueError(f"Unknown pattern_name '{pattern_name}'. "
+                         f"Available: {list(c.signals.keys())}")
+
+    t = c.time
+    data = c.signals[pattern_name]
+    spm = data["spm"]
+    impulses = data["impulses"]
+    energy = data["energy"]
+
+    # Find step times for plotting impulses as lines
+    step_indices = np.nonzero(impulses)[0]
+    step_times = t[step_indices]
+
+    fig, axes = plt.subplots(3, 1, figsize=figsize, sharex=True,gridspec_kw={"height_ratios": [1, 0.8, 0.8]})
+
+    # 1) SPM(t)
+    ax_spm = axes[0]
+    ax_spm.plot(t, spm, label="SPM(t)")
+    ax_spm.set_ylabel("SPM")
+    ax_spm.set_title(f"Cadence pattern: {pattern_name}")
+    ax_spm.legend(loc="upper right")
+
+    # 2) Impulses (step events)
+    ax_imp = axes[1]
+    ax_imp.vlines(step_times, 0, 1, color="C1", alpha=0.7, label="Steps")
+    ax_imp.set_ylabel("Impulses")
+    ax_imp.set_ylim(0, 1.2)
+    ax_imp.legend(loc="upper right")
+
+    # 3) Energy envelope
+    ax_energy = axes[2]
+    ax_energy.plot(t, energy, color="C2", label="Energy")
+    ax_energy.set_xlabel("Time (s)")
+    ax_energy.set_ylabel("Energy")
+    ax_energy.legend(loc="upper right")
+
+    plt.tight_layout()
+
+    if save_path:
+        fig.savefig(save_path, dpi=150)
+
+    plt.show()
+    return fig, axes
 
 
 

@@ -8,7 +8,7 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
     # Assumption 1: both song cadence is from wave class and not cadence class
     # Assumption 2: cadence is offline
     # Assumption 3: audio and cadence are with exact same length (in samples)
-    # Assumption 4: audio and cadence has same sr
+    # Assumption 4: audio and cadence has same sr 22050
     
   
     if not (type(cadence) is wave):
@@ -42,8 +42,9 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
         current_time = t[n]
         
         if (current_time < W): # Init - use global SPM
-            SPM = cadence.tempo
-            r = SPM / song.tempo
+            spm = cadence.tempo
+            bpm = song.tempo
+            r = spm / bpm
             
         else:
             start_idx = clip(time_to_samples(current_time - W, sr), 0, N) 
@@ -52,17 +53,18 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
             #NO need? start_idx = clip(start_idx, 0, N)
 
             cadence_signal_chunk = (cadence.signal)[start_idx:stop_idx] # Get the chunk from the cadence signal
-            SPM_tilde, _  = beat_track(y=cadence_signal_chunk, sr=sr, hop_length=cadence.hop_length)
+            spm_tilde, _  = beat_track(y=cadence_signal_chunk, sr=sr, hop_length=cadence.hop_length)
             # Check double time - Helper function
-            SPM = alpha * SPM_tilde + (1 - alpha) * SPM
+            spm = alpha * spm_tilde + (1 - alpha) * spm
         
-            r_tilde = SPM / song.tempo
+            r_tilde = spm / bpm
             r_tilde = clip(r_tilde, r_min, r_max)
 
             r_prev = r
             r = beta * r_tilde + (1 - beta) * r_prev
             r = clip(r, r_prev-dr, r_prev + dr)
 
+        (cadence.spm_list).append(spm)
         (song.r_list).append(r)
 
 

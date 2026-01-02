@@ -14,6 +14,7 @@ class wave:
         self.length = None # In Seconds
         self.sample_length = None # In Samples
         self.r_list=[]
+        self.spm_list = [] # Relevant for BPM pp only for cadnence
 
     def load(self):
         self.signal, self.sr = librosa.load(self.path, sr=None)

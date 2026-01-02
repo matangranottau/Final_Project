@@ -83,8 +83,8 @@ def run_constant_bpm_test():
         BPM_preprocssing(song_obj, cadence_obj, dt=dt)
         
         # 5. Analyze Results
-        print(f"Librosa detected Song BPM: {song_obj.BPM:.2f}")
-        print(f"Librosa detected Run BPM: {cadence_obj.BPM:.2f}")
+        print(f"Librosa detected Song BPM: {song_obj.tempo:.2f}")
+        print(f"Librosa detected Run BPM: {cadence_obj.tempo:.2f}")
 
         # Ignore first 5 seconds 
         start_index = int(5.0 / dt)

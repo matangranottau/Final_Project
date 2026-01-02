@@ -9,10 +9,10 @@ class wave:
         self.signal = None 
         self.sr = sr
         self.beats = None 
-        self.BPM = None
+        self.tempo = None
         self.hop_length = hop_length
-        self.length = None
-        self.sample_length = None
+        self.length = None # In Seconds
+        self.sample_length = None # In Samples
         self.r_list=[]
 
     def load(self):
@@ -31,7 +31,7 @@ class wave:
         # Convert beat frames to time (in seconds)
         self.beats = self.hop_length * beat_frames / self.sr
         
-        self.BPM = tempo
+        self.tempo = tempo
 
     def add_clicks(self, magnitude=10, click_ms = 2, click_decay = 4):
         # Convert time of beats to impulse array

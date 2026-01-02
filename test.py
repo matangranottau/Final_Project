@@ -1,5 +1,5 @@
 from oop import wave
-from cadence import cadence
+from cadence import make_cadence
 from plotter import plot_audio_onsets_beats
 from preprocessing import BPM_preprocssing
 from scipy.io.wavfile import write
@@ -29,6 +29,6 @@ write("clicks.wav", song.sr, clicks)
 
 
 ### --- Test block 4: "Check Preprocessing with Slow and Steady"
-bibi = cadence()
+bibi = make_cadence()
 BPM_preprocssing(song, bibi)
 ## Show a graph with: song.tempo(Title or constant value on graph), cadence.spm_list (list of spm every dt = 0.5 sec), song.r_list(list of r every dt = 0.5 sec) - Save graph

@@ -73,53 +73,91 @@ def plot_audio_onsets_beats(a: wave, start: float = None, end: float = None, fig
 	return fig, axes
 
 
-def plot_cadence_pattern(c: cadence,pattern_name: str = "slow_smooth_change", figsize=(12, 6), save_path: str = None):
+import numpy as np
+import matplotlib.pyplot as plt
+from oop import wave
+
+def plot_cadence_pattern(c: wave, pattern_name: str = "slow_smooth_change",figsize=(12, 6),save_path: str = None):
+    """
+    Plot cadence outputs produced by the NEW function-based cadence generator:
+      c = make_cadence(song, pattern=..., output=...)
+
+    Expects:
+      - c is oop.wave
+      - c.debug dict exists with:
+          "pattern", "t_spm", "spm_curve", "step_times", "impulses", "energy"
     """
 
+    # Basic validation
+    if not isinstance(c, wave):
+        raise ValueError("plot_cadence_pattern: c must be an oop.wave instance")
 
-    Parameters
+    if not hasattr(c, "debug") or c.debug is None:
+        raise ValueError("plot_cadence_pattern: c has no debug info. "
+                         "Make sure you generated it using make_cadence(...).")
 
-    - c : cadence A cadence instance with create_cadence() already called.
-    - pattern_name : exercise pattern
-    - figsize : tupleFigure size.
-    - save_path : str or None Optional path to save the figure. If None, just shows it.
-    """
-    if not c.signals or c.time is None:
-        raise ValueError("Cadence instance has no signals. ")
-                         
-    if pattern_name not in c.signals:
-        raise ValueError(f"Unknown pattern_name '{pattern_name}'. "
-                         f"Available: {list(c.signals.keys())}")
+    dbg = c.debug
 
-    t = c.time
-    data = c.signals[pattern_name]
-    spm = data["spm"]
-    impulses = data["impulses"]
-    energy = data["energy"]
+    # verify pattern_name matches what was generated
+    generated_pattern = dbg.get("pattern", None)
+    if generated_pattern is not None and pattern_name is not None:
+        if pattern_name != generated_pattern:
+            raise ValueError(
+                f"Requested pattern_name '{pattern_name}', but this cadence wave was generated with "
+                f"'{generated_pattern}'. Either regenerate cadence with that pattern or pass "
+                f"pattern_name='{generated_pattern}'."
+            )
 
-    # Find step times for plotting impulses as lines
-    step_indices = np.nonzero(impulses)[0]
-    step_times = t[step_indices]
+    # Low-rate SPM curve (t_spm)
+    t_spm = np.asarray(dbg.get("t_spm", []), dtype=float)
+    spm_curve = np.asarray(dbg.get("spm_curve", []), dtype=float)
 
-    fig, axes = plt.subplots(3, 1, figsize=figsize, sharex=True,gridspec_kw={"height_ratios": [1, 0.8, 0.8]})
+    # High-rate signals (audio-rate)
+    impulses = np.asarray(dbg.get("impulses", []), dtype=float)
+    energy = np.asarray(dbg.get("energy", []), dtype=float)
+
+    # Step times (seconds)
+    step_times = np.asarray(dbg.get("step_times", []), dtype=float)
+
+    # Build audio time axis (for energy plot)
+    if getattr(c, "sr", None) is None:
+        raise ValueError("plot_cadence_pattern: c.sr is missing")
+    sr = float(c.sr)
+
+    if energy.size > 0:
+        t_audio = np.arange(energy.size, dtype=float) / sr
+    elif impulses.size > 0:
+        t_audio = np.arange(impulses.size, dtype=float) / sr
+    else:
+        t_audio = np.array([], dtype=float)
+
+    fig, axes = plt.subplots(
+        3, 1, figsize=figsize, sharex=False,
+        gridspec_kw={"height_ratios": [1, 0.8, 0.8]}
+    )
 
     # 1) SPM(t)
     ax_spm = axes[0]
-    ax_spm.plot(t, spm, label="SPM(t)")
+    if t_spm.size > 0 and spm_curve.size > 0:
+        ax_spm.plot(t_spm, spm_curve, label="SPM(t)")
     ax_spm.set_ylabel("SPM")
-    ax_spm.set_title(f"Cadence pattern: {pattern_name}")
+    ax_spm.set_title(f"Cadence pattern: {generated_pattern if generated_pattern else pattern_name}")
     ax_spm.legend(loc="upper right")
 
     # 2) Impulses (step events)
     ax_imp = axes[1]
-    ax_imp.vlines(step_times, 0, 1, color="C1", alpha=0.7, label="Steps")
+    if step_times.size > 0:
+        ax_imp.vlines(step_times, 0, 1, alpha=0.7, label="Steps")
     ax_imp.set_ylabel("Impulses")
     ax_imp.set_ylim(0, 1.2)
     ax_imp.legend(loc="upper right")
 
-    # 3) Energy envelope
+    # 3) Energy envelope (or fallback to c.signal if you generated impulses-only)
     ax_energy = axes[2]
-    ax_energy.plot(t, energy, color="C2", label="Energy")
+    if energy.size > 0 and t_audio.size > 0:
+        ax_energy.plot(t_audio, energy, label="Energy")
+    elif getattr(c, "signal", None) is not None and t_audio.size > 0:
+        ax_energy.plot(t_audio, np.asarray(c.signal, dtype=float), label="Cadence signal")
     ax_energy.set_xlabel("Time (s)")
     ax_energy.set_ylabel("Energy")
     ax_energy.legend(loc="upper right")

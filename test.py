@@ -1,6 +1,6 @@
 from oop import wave
 from cadence import make_cadence
-from plotter import plot_audio_onsets_beats
+from plotter import plot_audio_onsets_beats, plot_cadence_pattern
 from preprocessing import BPM_preprocssing
 from scipy.io.wavfile import write
 import numpy as np
@@ -25,7 +25,8 @@ write("clicks.wav", song.sr, clicks)
 
 ### --- Test block 3: "Slow and steady" => FAIL :  ###
 ## Plot slow and steady cadence
-
+cad = make_cadence(song, pattern="slow_smooth_change", output="energy")
+plot_cadence_pattern(cad, pattern_name="slow_smooth_change")
 
 
 ### --- Test block 4: "Check Preprocessing with Slow and Steady"

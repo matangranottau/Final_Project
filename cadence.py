@@ -1,184 +1,194 @@
 import numpy as np
 from oop import wave
 
-class cadence:
-    def __init__(self):
-        self.signal = None  # Numpy array of cadence signal
-        self.sr = None  # Sampling rate of cadence signal
-        self.spm = None # Steps per minute
-        self.time = None  # Time axis (seconds)
-        self.signals = {}  # Dictionary with 5 synthetic patterns
-        self.default_duration = 60  # seconds
 
-    def copy_sr(self, audio):
-        # Copy sampling rate from audio instance
-        self.sr = audio.sr
-
-    def generate_time_axis(self, duration_s):
-        if self.sr is None:
-            # If no sampling rate was copied from audio, choose a default
-            self.sr = 50.0  # 50 Hz is enough for step impulses
-        t = np.arange(0, duration_s, 1.0 / self.sr)
-        return t
-    
+def spm_slow_smooth_change(t, spm_start=140, spm_end=180, **kwargs):
     # 1) Slow and steady change
-    def spm_slow_smooth_change(self, t, spm_start=140, spm_end=180):
-    
-        return spm_start + (spm_end - spm_start) * (t / t[-1])
-
-    #2) SUdden change in t_jump
-    def spm_fast_jump(self, t, t_jump=20.0, spm_before=140, spm_after=180):
-       
-        spm = np.where(t < t_jump, spm_before, spm_after)
-        return spm
-    
-    #3) Interval training
-    def spm_interval_training(self, t, segment_length=12.0,
-                               spm_values=(150, 180, 130, 175, 160)):
-        
-        spm = np.zeros_like(t)
-        n_segments = len(spm_values)
-        for i, spm_val in enumerate(spm_values):
-            t_start = i * segment_length
-            t_end = (i + 1) * segment_length
-            spm[(t >= t_start) & (t < t_end)] = spm_val
-
-        # If the total time is longer than all segments, hold last SPM
-        if (n_segments * segment_length) < t[-1]:
-            spm[t >= n_segments * segment_length] = spm_values[-1]
-        return spm
-
-    #4) Natural Running With small noises
-    def spm_noisy_natural(self, t, base_spm=165, noise_std=3.0, drift_std=0.03):
-        dt = t[1] - t[0]
-        n = len(t)
-
-        # Slow random walk drift
-        drift = np.cumsum(np.random.normal(scale=drift_std * np.sqrt(dt), size=n))
-        # Short-term jitter
-        noise = np.random.normal(scale=noise_std, size=n)
-
-        spm = base_spm + drift + noise
-        spm = np.clip(spm, 140, 190)  # keep in reasonable range
-        return spm
-
-    #5) Start/Stop Training
-    def spm_start_stop(self, t,
-                        t_run1=(10, 30), t_run2=(35, 60),
-                        spm_run1=155, spm_run2=175):
-        spm = np.zeros_like(t)
-        spm[(t >= t_run1[0]) & (t < t_run1[1])] = spm_run1
-        spm[(t >= t_run2[0]) & (t < t_run2[1])] = spm_run2
-        return spm
-
-    #Convert SPM(t) to a discrete-time step impulse train, x[n] = 1 when a step occurs, 0 otherwise.
-    def spm_to_step_impulses(self, t, spm):
-
-        dt = t[1] - t[0]
-        fs = 1.0 / dt
-
-        x = np.zeros_like(t)
-        current_time = 0.0
-
-        while current_time <= t[-1]:
-            idx = int(round(current_time * fs))
-            if idx >= len(t):
-                break
-
-            local_spm = spm[idx]
-
-            if local_spm > 0:
-                steps_per_sec = local_spm / 60.0
-                period = 1.0 / steps_per_sec  # seconds between steps
-                x[idx] = 1.0
-                current_time += period
-            else:
-                # Standing still: move a bit forward and re-check
-                current_time += 0.1
-
-        return x   
-
-    #Impulse to energy
-    def impulses_to_energy(self, impulses, window_ms=80):
-
-        win_len = int(np.round(window_ms * 1e-3 * self.sr))
-        if win_len < 1:
-            win_len = 1
-        window = np.ones(win_len, dtype=float) / win_len
-        energy = np.convolve(impulses, window, mode='same')
-        return energy
-
-    def create_cadence(self):
-        # Time axis
-        t = self.generate_time_axis(self.default_duration)
-        self.time = t
-
-        # 1) Slow and steady change 
-        spm1 = self.spm_slow_smooth_change(t)
-        imp1 = self.spm_to_step_impulses(t, spm1)
-        en1 = self.impulses_to_energy(imp1)
-        self.signals["slow_smooth_change"] = {
-            "spm": spm1,
-            "impulses": imp1,
-            "energy": en1,
-        }
-
-        # 2) SUdden change in t_jump
-        spm2 = self.spm_fast_jump(t)
-        imp2 = self.spm_to_step_impulses(t, spm2)
-        en2 = self.impulses_to_energy(imp2)
-        self.signals["fast_jump"] = {
-            "spm": spm2,
-            "impulses": imp2,
-            "energy": en2,
-        }
-
-        # 3) Interval training 
-        spm3 = self.spm_interval_training(t)
-        imp3 = self.spm_to_step_impulses(t, spm3)
-        en3 = self.impulses_to_energy(imp3)
-        self.signals["interval_training"] = {
-            "spm": spm3,
-            "impulses": imp3,
-            "energy": en3,
-        }
-
-        # 4) Natural Running With small noises
-        spm4 = self.spm_noisy_natural(t)
-        imp4 = self.spm_to_step_impulses(t, spm4)
-        en4 = self.impulses_to_energy(imp4)
-        self.signals["noisy_natural"] = {
-            "spm": spm4,
-            "impulses": imp4,
-            "energy": en4,
-        }
-
-        # 5) Start/stop Training
-        spm5 = self.spm_start_stop(t)
-        imp5 = self.spm_to_step_impulses(t, spm5)
-        en5 = self.impulses_to_energy(imp5)
-        self.signals["start_stop"] = {
-            "spm": spm5,
-            "impulses": imp5,
-            "energy": en5,
-        }
-
-        # Default: use the impulses of the first pattern as "self.signal"
-        self.signal = self.signals["slow_smooth_change"]["impulses"]
+    if t.size == 0:
+        return np.array([], dtype=float)
+    return spm_start + (spm_end - spm_start) * (t / t[-1])
 
 
-    def calc_SRM(self):
-        # Calculate steps per minute (SRM) from cadence signal
-        if self.signal is None or self.sr is None:
-            raise ValueError("cadence.calc_SRM: self.signal or self.sr is not set")
+def spm_fast_jump(t, t_jump=20.0, spm_before=140, spm_after=180, **kwargs):
+    # 2) Sudden change at t_jump
+    return np.where(t < t_jump, spm_before, spm_after).astype(float)
 
-        # Count steps as non-zero samples (impulses)
-        n_steps = np.count_nonzero(self.signal)
-        duration_s = len(self.signal) / float(self.sr)
 
-        if duration_s == 0:
-            self.spm = 0.0
+def spm_interval_training(t, segment_length=12.0, spm_values=(150, 180, 130, 175, 160), **kwargs):
+    # 3) Interval training
+    spm = np.zeros_like(t, dtype=float)
+    n_segments = len(spm_values)
+
+    for i, spm_val in enumerate(spm_values):
+        t_start = i * segment_length
+        t_end = (i + 1) * segment_length
+        spm[(t >= t_start) & (t < t_end)] = float(spm_val)
+
+    # If total time longer than segments, hold last SPM
+    if (n_segments * segment_length) < t[-1]:
+        spm[t >= n_segments * segment_length] = float(spm_values[-1])
+
+    return spm
+
+
+def spm_noisy_natural(t, base_spm=165, noise_std=3.0, drift_std=0.03, rng=None, **kwargs):
+    # 4) Natural running with small noises
+    if t.size < 2:
+        return np.full_like(t, float(base_spm), dtype=float)
+
+    if rng is None:
+        rng = np.random.default_rng()
+
+    dt = float(t[1] - t[0])
+    n = len(t)
+
+    drift = np.cumsum(rng.normal(scale=drift_std * np.sqrt(dt), size=n))
+    noise = rng.normal(scale=noise_std, size=n)
+
+    spm = base_spm + drift + noise
+    return np.clip(spm, 140, 190).astype(float)
+
+
+def spm_start_stop(t, t_run1=(10, 30), t_run2=(35, 60), spm_run1=155, spm_run2=175, **kwargs):
+    # 5) Start/stop training
+    spm = np.zeros_like(t, dtype=float)
+    spm[(t >= t_run1[0]) & (t < t_run1[1])] = float(spm_run1)
+    spm[(t >= t_run2[0]) & (t < t_run2[1])] = float(spm_run2)
+    return spm
+
+
+PATTERNS = {
+    "slow_smooth_change": spm_slow_smooth_change,
+    "fast_jump": spm_fast_jump,
+    "interval_training": spm_interval_training,
+    "noisy_natural": spm_noisy_natural,
+    "start_stop": spm_start_stop,
+}
+
+
+
+def spm_curve_to_step_times(t_spm, spm_curve):
+    """
+    Converts an SPM(t) curve (defined on t_spm) into step event times (seconds).
+    Uses a simple "next step time += 60/SPM(current_time)" loop.
+    """
+    if t_spm.size == 0:
+        return np.array([], dtype=float)
+
+    dt = float(t_spm[1] - t_spm[0]) if t_spm.size > 1 else 1e-3
+    t_end = float(t_spm[-1])
+
+    step_times = []
+    current_time = 0.0
+
+    while current_time <= t_end:
+        idx = int(current_time / dt)
+        if idx >= len(spm_curve):
+            break
+
+        local_spm = float(spm_curve[idx])
+
+        if local_spm > 0.0:
+            period = 60.0 / local_spm
+            step_times.append(current_time)
+            current_time += period
         else:
-            self.spm = n_steps * 60.0 / duration_s
+            # standing still: advance a bit and re-check
+            current_time += 0.1
 
-        return self.spm
+    return np.array(step_times, dtype=float)
+
+
+def step_times_to_impulses(step_times, sr, n_samples):
+    """
+    Render step times (seconds) to an audio-rate impulse train (length n_samples).
+    """
+    x = np.zeros(int(n_samples), dtype=np.float32)
+    if step_times.size == 0:
+        return x
+
+    idx = np.round(step_times * float(sr)).astype(int)
+    idx = idx[(idx >= 0) & (idx < n_samples)]
+    x[idx] = 1.0
+    return x
+
+
+def impulses_to_energy(impulses, sr, window_ms=80):
+    """
+    Smooth impulses into an 'energy envelope' so beat_track/onset_strength behave better.
+    """
+    win_len = int(np.round(window_ms * 1e-3 * float(sr)))
+    win_len = max(1, win_len)
+    window = np.ones(win_len, dtype=np.float32) / float(win_len)
+    return np.convolve(impulses.astype(np.float32), window, mode="same").astype(np.float32)
+
+
+def _wave_from_array(signal, sr, hop_length=512):
+    """
+    Create an oop.wave instance 
+    """
+    w = wave.__new__(wave)  # bypass __init__
+    w.signal = np.asarray(signal, dtype=np.float32)
+    w.sr = int(sr)
+    w.length = w.signal.size / float(w.sr)
+
+    # fields your code uses later
+    w.hop_length = int(hop_length)
+    w.tempo = None
+    w.beats = None
+    w.r_list = []
+    w.spm_list = []
+    return w
+
+def make_cadence(song: wave,
+                pattern="slow_smooth_change",
+                cadence_dt=0.02,
+                output="energy",
+                window_ms=80,
+                seed=None,
+                **pattern_kwargs):
+    """
+    Returns a cadence signal as an oop.wave instance, SAME sr and SAME length as the song,
+    so it passes BPM_preprocssing checks. :contentReference[oaicite:2]{index=2}
+
+    output: "energy" (recommended) or "impulses"
+    """
+    if not (type(song) is wave):
+        raise ValueError("make_cadence: song must be type oop.wave")
+
+    if pattern not in PATTERNS:
+        raise ValueError(f"Unknown pattern '{pattern}'. Available: {list(PATTERNS.keys())}")
+
+    sr = song.sr
+    n_samples = song.signal.size
+    duration_sec = n_samples / float(sr)
+
+    # low-rate timeline for SPM curve
+    n_spm = max(2, int(np.floor(duration_sec / float(cadence_dt))) + 1)
+    t_spm = np.linspace(0.0, duration_sec, n_spm)
+
+    rng = np.random.default_rng(seed)
+
+    # build SPM(t)
+    spm_curve = PATTERNS[pattern](t_spm, rng=rng, **pattern_kwargs)
+
+    # step events -> audio-rate impulses -> (optional) energy
+    step_times = spm_curve_to_step_times(t_spm, spm_curve)
+    impulses = step_times_to_impulses(step_times, sr=sr, n_samples=n_samples)
+    energy = impulses_to_energy(impulses, sr=sr, window_ms=window_ms)
+
+    signal = energy if output == "energy" else impulses
+    c = _wave_from_array(signal, sr=sr, hop_length=getattr(song, "hop_length", 512))
+
+    # useful debug for plotting (instead of c.signals/c.time from the old class)
+    c.debug = {
+        "pattern": pattern,
+        "t_spm": t_spm,
+        "spm_curve": spm_curve,
+        "step_times": step_times,
+        "impulses": impulses,
+        "energy": energy,
+        "true_global_spm": (len(step_times) * 60.0 / duration_sec) if duration_sec > 0 else 0.0,
+    }
+
+    return c

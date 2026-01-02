@@ -47,8 +47,8 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
             r = spm / bpm
             
         else:
-            start_idx = clip(time_to_samples(current_time - W, sr), 0, N) 
-            stop_idx = clip(time_to_samples(current_time, sr), 0, N) 
+            start_idx = clip(time_to_samples(current_time - W, sr=sr), 0, N) 
+            stop_idx = clip(time_to_samples(current_time, sr=sr), 0, N) 
 
             #NO need? start_idx = clip(start_idx, 0, N)
 

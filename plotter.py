@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import librosa
 import numpy as np
 from oop import wave
-from cadence import cadence
+#from cadence import cadence
 
 
 def plot_audio_onsets_beats(a: wave, start: float = None, end: float = None, figsize=(12, 6), save_path: str = None):
@@ -72,10 +72,6 @@ def plot_audio_onsets_beats(a: wave, start: float = None, end: float = None, fig
 	plt.show()
 	return fig, axes
 
-
-import numpy as np
-import matplotlib.pyplot as plt
-from oop import wave
 
 def plot_cadence_pattern(c: wave, pattern_name: str = "slow_smooth_change",figsize=(12, 6),save_path: str = None):
     """

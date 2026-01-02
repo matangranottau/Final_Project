@@ -1,7 +1,7 @@
 import numpy as np
 from oop import wave
 from preprocessing import BPM_preprocssing
-from cadence import cadence
+from cadence import make_cadence
 import matplotlib.pyplot as plt
 import traceback
 
@@ -121,49 +121,43 @@ def run_constant_bpm_test():
         traceback.print_exc()
 
 def run_cadence_class_integration():
-    print("\nTest 2: Integration with cadence.py")
+    print("\nTest 2: Integration with cadence.py factory")
     sr = 22050
     duration = 60
     
-    # 1. Use the provided cadence class to generate a pattern
-    c = cadence()
-    c.sr = sr
-    c.default_duration = duration
-    c.create_cadence() # Generates signals
-    
-    # Use "slow_smooth_change" pattern (starts 140, ends 180)
-    run_signal_impulses = c.signals["slow_smooth_change"]["impulses"]
-    
-    # Convolve impulses to make them 'audible' for beat_track - Simulating footstep sounds
-    click_kernel = np.hamming(500)
-    run_signal_audio = np.convolve(run_signal_impulses, click_kernel, mode='same')
-    run_signal_audio = run_signal_audio.astype(np.float32)
-    run_signal_audio /= (np.max(np.abs(run_signal_audio)) + 1e-9) # Normalize
-
-    # 2. Create a steady song (150 BPM)
+    # 1. Create a steady song (150 BPM) FIRST
+    # We do this first so we can pass it to make_cadence to match length/sr
     song_signal = make_click_track(150, sr, duration)
-
-    # 3. Align sizes
-    min_len = min(song_signal.size, run_signal_audio.size)
-    song_signal = song_signal[:min_len]
-    run_signal_audio = run_signal_audio[:min_len]
-
-    # 4. Wrap in Wave objects
     song_obj = create_wave_object(song_signal, sr)
-    cadence_obj = create_wave_object(run_signal_audio, sr)
 
-    # 5. Run Processing
+    # 2. Use make_cadence to generate the Runner's signal
+    # make_cadence now returns a READY-TO-USE wave object. 
+    # No need to manually convolve or wrap it again!
+    cadence_obj = make_cadence(
+        song=song_obj,
+        pattern="slow_smooth_change",
+        output="energy" # This ensures the signal is continuous (audible), not just empty impulses
+    )
+
+    # 3. Run Processing
     try:
         BPM_preprocssing(song_obj, cadence_obj, dt=0.5)
         print("Integration successful: preprocessing ran without errors.")
+        
+        # Verify it actually detected something
+        print(f"Song Tempo: {song_obj.tempo}")
+        print(f"Cadence Global Tempo: {cadence_obj.tempo}")
+        
         print(f"Resulting r_list length: {len(song_obj.r_list)}")
-        print(f"First 5 r values: {song_obj.r_list[:5]}")
-        print(f"Last 5 r values: {song_obj.r_list[-5:]}")
+        if len(song_obj.r_list) > 0:
+            print(f"First 5 r values: {song_obj.r_list[:5]}")
+            print(f"Last 5 r values: {song_obj.r_list[-5:]}")
         
     except Exception as e:
         print(f"Integration Failed: {e}")
         traceback.print_exc()
 
+        
 if __name__ == "__main__":
     run_constant_bpm_test()
     run_cadence_class_integration()

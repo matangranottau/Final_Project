@@ -4,6 +4,7 @@ from plotter import plot_audio_onsets_beats, plot_cadence_pattern
 from preprocessing import BPM_preprocssing
 from scipy.io.wavfile import write
 import numpy as np
+import os
 
 
 # Get audio instance, extract beats
@@ -23,6 +24,7 @@ plot_audio_onsets_beats(song, start=30.0, end=60.0, save_path="Plots/seven_natio
 clicks = song.add_clicks()
 write("clicks.wav", song.sr, clicks)
 
+
 ### --- Test block 3: "Slow and steady" => FAIL :  ###
 ## Plot slow and steady cadence
 cad = make_cadence(song, pattern="slow_smooth_change", output="energy")
@@ -30,6 +32,6 @@ plot_cadence_pattern(cad, pattern_name="slow_smooth_change")
 
 
 ### --- Test block 4: "Check Preprocessing with Slow and Steady"
-bibi = make_cadence()
+bibi = make_cadence(song, pattern="slow_smooth_change", output="energy")
 BPM_preprocssing(song, bibi)
 ## Show a graph with: song.tempo(Title or constant value on graph), cadence.spm_list (list of spm every dt = 0.5 sec), song.r_list(list of r every dt = 0.5 sec) - Save graph

@@ -13,7 +13,7 @@ class wave:
         self.hop_length = hop_length
         self.length = None # In Seconds
         self.sample_length = None # In Samples
-        self.r_list=[]
+        self.r_list=[]  # Relevant for BPM pp only for song
         self.spm_list = [] # Relevant for BPM pp only for cadnence
 
     def load(self):

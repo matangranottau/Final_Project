@@ -32,7 +32,7 @@ song.extract()
 # cad = make_cadence(song, pattern="interval_training", output="energy", segment_length=30.0, spm_values=long_interval_pattern)
 # plot_cadence_pattern(cad, pattern_name="start_stop")
 
-# # 2. ZOOMED view (This fixes your visual issue!)
+## ZOOMED view (This fixes your visual issue!)
 # print("Plotting zoomed cadence ...")
 # plot_cadence_pattern(cad, pattern_name="start_stop", 
 #                      start=40.0, end=80.0, 
@@ -41,12 +41,12 @@ song.extract()
 ### --- Test block 4: "Check Preprocessing with synthetic trains" => PASS ###
 
 long_interval_pattern = [150, 180, 140, 175, 130, 160, 180, 145]
-bibi = make_cadence(song, pattern="interval_training", output="energy", segment_length=30.0, spm_values=long_interval_pattern)
-BPM_preprocssing(song, bibi, dt=0.5)
+cadence = make_cadence(song, pattern="interval_training", output="energy", segment_length=30.0, spm_values=long_interval_pattern)
+BPM_preprocssing(song, cadence, dt=0.5)
 ## Show a graph with: song.tempo(Title or constant value on graph), cadence.spm_list (list of spm every dt = 0.5 sec), song.r_list(list of r every dt = 0.5 sec) - Save graph
 # Create time axis for the lists (0.5s steps)
 dt = 0.5
-time_axis = np.arange(len(bibi.spm_list)) * dt
+time_axis = np.arange(len(cadence.spm_list)) * dt
 
 fig, ax1 = plt.subplots(figsize=(10, 6))
 
@@ -54,7 +54,7 @@ fig, ax1 = plt.subplots(figsize=(10, 6))
 color = 'tab:blue'
 ax1.set_xlabel('Time (s)')
 ax1.set_ylabel('Cadence SPM', color=color)
-ax1.plot(time_axis, bibi.spm_list, color=color, label='Detected SPM')
+ax1.plot(time_axis, cadence.spm_list, color=color, label='Detected SPM')
 ax1.tick_params(axis='y', labelcolor=color)
 ax1.grid(True, alpha=0.3)
 
@@ -69,3 +69,4 @@ plt.title(f"Preprocessing Result: Song Tempo ~{song.tempo:.1f} BPM")
 fig.tight_layout()
 plt.savefig("Plots/preprocessing_result_start_stop.png")
 plt.show()
+

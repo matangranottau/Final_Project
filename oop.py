@@ -15,14 +15,21 @@ class wave:
         self.tempo = None
         self.hop_length = hop_length
 
-        if mode == 0:
-            mode_str = "General Wave"
-        elif mode == 1:
-            mode_str = "Song" 
-        elif mode == 2:
-            mode_str = "Cadence"
-        self.type = mode_str
-        
+        #   if mode == 0:
+        #    mode = "General Wave"
+        #   if mode == 1:   
+        #    mode_str = "Song" 
+        #   if mode == 2
+        #    mode_str = "Cadence"
+        #   else
+        #    Unknown
+
+        if mode not in [0, 1, 2]:
+            mode = None
+            raise ValueError("Mode must be 0, 1, or 2")
+
+        self.mode = mode
+
         self.length = None # In Seconds
         self.sample_length = None # In Samples
         self.r_list=[]  # Relevant for BPM pp only for song

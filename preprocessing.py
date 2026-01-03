@@ -23,6 +23,12 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
     if (cadence.signal.size != song.signal.size):
         raise ValueError("Not Same Size")
     
+    if cadence.mode != 1:
+        raise ValueError("Song mode not correct")
+    
+    if cadence.mode != 2:
+        raise ValueError("Cadence mode not correct")
+    
     sr = cadence.sr # Sampling rate
     N = cadence.signal.size # N = Number of samples in both signals
 

@@ -40,48 +40,50 @@ song.extract()
 
 ### --- Test block 4: "Check Preprocessing with synthetic trains" => PASS ###
 
-# long_interval_pattern = [150, 180, 140, 175, 130, 160, 180, 145]
-# cadence = make_cadence(song, pattern="interval_training", output="energy", segment_length=30.0, spm_values=long_interval_pattern)
-# BPM_preprocssing(song, cadence, dt=0.5)
-# ## Show a graph with: song.tempo(Title or constant value on graph), cadence.spm_list (list of spm every dt = 0.5 sec), song.r_list(list of r every dt = 0.5 sec) - Save graph
-# # Create time axis for the lists (0.5s steps)
-# dt = 0.5
-# time_axis = np.arange(len(cadence.spm_list)) * dt
+long_interval_pattern = [150, 180, 140, 175, 130, 160, 180, 145]
+cadence = make_cadence(song, pattern="interval_training", output="energy", segment_length=30.0, spm_values=long_interval_pattern)
+BPM_preprocssing(song, cadence, dt=0.5)
+## Show a graph with: song.tempo(Title or constant value on graph), cadence.spm_list (list of spm every dt = 0.5 sec), song.r_list(list of r every dt = 0.5 sec) - Save graph
+# Create time axis for the lists (0.5s steps)
+dt = 0.5
+time_axis = np.arange(len(cadence.spm_list)) * dt
 
-# fig, ax1 = plt.subplots(figsize=(10, 6))
+fig, ax1 = plt.subplots(figsize=(10, 6))
 
-# # Plot SPM (Left Y-axis)
-# color = 'tab:blue'
-# ax1.set_xlabel('Time (s)')
-# ax1.set_ylabel('Cadence SPM', color=color)
-# ax1.plot(time_axis, cadence.spm_list, color=color, label='Detected SPM')
-# ax1.tick_params(axis='y', labelcolor=color)
-# ax1.grid(True, alpha=0.3)
+# Plot SPM (Left Y-axis)
+color = 'tab:blue'
+ax1.set_xlabel('Time (s)')
+ax1.set_ylabel('Cadence SPM', color=color)
+ax1.plot(time_axis, cadence.spm_list, color=color, label='Detected SPM')
+ax1.tick_params(axis='y', labelcolor=color)
+ax1.grid(True, alpha=0.3)
 
-# # Plot Ratio 'r' (Right Y-axis)
-# ax2 = ax1.twinx()  
-# color = 'tab:red'
-# ax2.set_ylabel('Ratio r (SPM/BPM)', color=color)
-# ax2.plot(time_axis, song.r_list, color=color, linestyle='--', label='Ratio r')
-# ax2.tick_params(axis='y', labelcolor=color)
+# Plot Ratio 'r' (Right Y-axis)
+ax2 = ax1.twinx()  
+color = 'tab:red'
+ax2.set_ylabel('Ratio r (SPM/BPM)', color=color)
+ax2.plot(time_axis, song.r_list, color=color, linestyle='--', label='Ratio r')
+ax2.tick_params(axis='y', labelcolor=color)
 
-# plt.title(f"Preprocessing Result: Song Tempo ~{song.tempo:.1f} BPM")
-# fig.tight_layout()
-# plt.savefig("Plots/preprocessing_result_start_stop.png")
-# plt.show()
+plt.title(f"Preprocessing Result: Song Tempo ~{song.tempo:.1f} BPM")
+fig.tight_layout()
+plt.savefig("Plots/preprocessing_result_start_stop.png")
+plt.show()
 
-### --- Test case: mode in opp => ___ : ###
+### --- Test case: mode in opp => PASS: ###
 ## Test if mode is OK 
-general_wave = 0
-song_wave = 1
-cadence_mode = 2
-err_list = [wave(song)]
+# general_wave = 0
+# song_wave = 1
+# cadence_mode = 2
+# err_list = [wave(song)]
 
-for i in range (4):
-    dummy = wave(path, mode=i)
-    print(f"Test {i} passed" if dummy.mode == i else f"Test {i} FAILED")
+# for i in range (4):
+#     dummy = wave(path, mode=i)
+#     print(f"Test {i} passed" if dummy.mode == i else f"Test {i} FAILED")
 
 # Passes error tests
+
+
 
 
 

@@ -146,6 +146,8 @@ def make_cadence(song: wave,
                 output="energy",
                 window_ms=80,
                 seed=None,
+                noise_std=0.0,   # Gaussian noise amount
+                drift_std=0.0,   # NEW: Random drift amount
                 **pattern_kwargs):
     """
     Returns a cadence signal as an oop.wave instance, SAME sr and SAME length as the song,
@@ -167,10 +169,29 @@ def make_cadence(song: wave,
     n_spm = max(2, int(np.floor(duration_sec / float(cadence_dt))) + 1)
     t_spm = np.linspace(0.0, duration_sec, n_spm)
 
+    dt = float(t_spm[1] - t_spm[0])
+
     rng = np.random.default_rng(seed)
 
     # build SPM(t)
     spm_curve = PATTERNS[pattern](t_spm, rng=rng, **pattern_kwargs)
+
+    # Inject Global Noise / Drift (if requested)
+    if noise_std > 0 or drift_std > 0:
+        drift = 0.0
+        if drift_std > 0:
+            # Random walk 
+            drift = np.cumsum(rng.normal(scale=drift_std * np.sqrt(dt), size=len(t_spm)))
+        
+        white_noise = 0.0
+        if noise_std > 0:
+            # White Gaussian noise
+            white_noise = rng.normal(scale=noise_std, size=len(t_spm))
+
+        spm_curve = spm_curve + drift + white_noise
+        
+        # Safety clip to prevent negative or impossible SPM
+        spm_curve = np.clip(spm_curve, 30, 250)
 
     # step events -> audio-rate impulses -> (optional) energy
     step_times = spm_curve_to_step_times(t_spm, spm_curve)

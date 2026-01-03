@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 path = "Songs/Seven Nation Army.mp3"
 song = wave(path)
 song.extract()
+song.mode = 1
 
 ## Tests ----------------------------------------------------------## 
 
@@ -26,22 +27,23 @@ song.extract()
 # write("clicks.wav", song.sr, clicks)
 
 
-### --- Test block 3: "Slow and steady" => FAIL :  ###
-## Plot slow and steady cadence
+# ### --- Test block 3: "Slow and steady" => FAIL :  ###
+# # Plot slow and steady cadence
 # long_interval_pattern = [160, 0, 170, 0, 130, 0, 180, 0]
-# cad = make_cadence(song, pattern="interval_training", output="energy", segment_length=30.0, spm_values=long_interval_pattern)
-# plot_cadence_pattern(cad, pattern_name="start_stop")
+# cad = make_cadence(song, pattern="noisy_natural", output="energy", segment_length=30.0)
+# plot_cadence_pattern(cad, pattern_name="noisy_natural")
 
-## ZOOMED view (This fixes your visual issue!)
+# # ZOOMED view (This fixes your visual issue!)
 # print("Plotting zoomed cadence ...")
-# plot_cadence_pattern(cad, pattern_name="start_stop", 
+# plot_cadence_pattern(cad, pattern_name="noisy_natural", 
 #                      start=40.0, end=80.0, 
-#                      save_path="Plots/zoomed_cadence_start_stop.png")
+#                      save_path="Plots/zoomed_cadence_noisy_natural.png")
 
-### --- Test block 4: "Check Preprocessing with synthetic trains" => PASS ###
+## --- Test block 4: "Check Preprocessing with synthetic trains" => PASS ###
 
 long_interval_pattern = [150, 180, 140, 175, 130, 160, 180, 145]
-cadence = make_cadence(song, pattern="interval_training", output="energy", segment_length=30.0, spm_values=long_interval_pattern)
+cadence = make_cadence(song, pattern="noisy_natural", output="energy", segment_length=30.0)
+cadence.mode = 2
 BPM_preprocssing(song, cadence, dt=0.5)
 ## Show a graph with: song.tempo(Title or constant value on graph), cadence.spm_list (list of spm every dt = 0.5 sec), song.r_list(list of r every dt = 0.5 sec) - Save graph
 # Create time axis for the lists (0.5s steps)
@@ -67,7 +69,7 @@ ax2.tick_params(axis='y', labelcolor=color)
 
 plt.title(f"Preprocessing Result: Song Tempo ~{song.tempo:.1f} BPM")
 fig.tight_layout()
-plt.savefig("Plots/preprocessing_result_start_stop.png")
+plt.savefig("Plots/noisy_natural.png")
 plt.show()
 
 ### --- Test case: mode in opp => PASS: ###

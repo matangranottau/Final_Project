@@ -4,13 +4,25 @@ import numpy as np
 
 
 class wave:
-    def __init__(self, path, sr=None, hop_length=512):
+    def __init__(self, path, sr=None, hop_length=512, mode=0):
+        # mode = 0 is Deafult -> General Wave
+        # mode = 1 is Song
+        # mode = 2 is Cadence
         self.path = path
         self.signal = None 
         self.sr = sr
         self.beats = None 
         self.tempo = None
         self.hop_length = hop_length
+
+        if mode == 0:
+            mode_str = "General Wave"
+        elif mode == 1:
+            mode_str = "Song" 
+        elif mode == 2:
+            mode_str = "Cadence"
+        self.type = mode_str
+        
         self.length = None # In Seconds
         self.sample_length = None # In Samples
         self.r_list=[]  # Relevant for BPM pp only for song

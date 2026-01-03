@@ -32,19 +32,25 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
     
 
     song.extract() # This gets BPM of the audio.
-    cadence.extract() # This get GLOBAL SPM of cadence.
+    # Only calculate global tempo if not already present
+    if cadence.tempo is None:
+        cadence.extract() # This gets global SPM of the cadence.
     
     t = np.arange(0, cadence.length, dt) # Time axis (dt jumps)
 
     r = 1 #init r 
+
+    # Ensure variables are initialized before use
+    spm = float(cadence.tempo) if cadence.tempo is not None else 120.0
+    bpm = float(song.tempo) if song.tempo is not None else 120.0
     
     for n in range(t.size): # I do here a loop because t.size is not that big (~350 iterations)
         current_time = t[n]
         
         if (current_time < W): # Init - use global SPM
-            spm = cadence.tempo
-            bpm = song.tempo
-            r = spm / bpm
+            spm = float(cadence.tempo) if cadence.tempo is not None else 0.0
+            bpm = float(song.tempo) if song.tempo is not None else 0.0
+            r = spm / bpm if bpm != 0 else 0
             
         else:
             start_idx = clip(time_to_samples(current_time - W, sr=sr), 0, N) 
@@ -53,7 +59,10 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
             #NO need? start_idx = clip(start_idx, 0, N)
 
             cadence_signal_chunk = (cadence.signal)[start_idx:stop_idx] # Get the chunk from the cadence signal
-            spm_tilde, _  = beat_track(y=cadence_signal_chunk, sr=sr, hop_length=cadence.hop_length)
+            prior_guess = spm if spm > 0 else 120.0 # This prevents Librosa from jumping to 80 BPM when we are at 160 BPM.
+
+            spm_tilde, _  = beat_track(y=cadence_signal_chunk, sr=sr, hop_length=cadence.hop_length, start_bpm=prior_guess)
+            spm_tilde = float(spm_tilde)
             # Check double time - Helper function
             spm = alpha * spm_tilde + (1 - alpha) * spm
         

@@ -32,7 +32,7 @@ class wave:
         # Convert beat frames to time (in seconds)
         self.beats = self.hop_length * beat_frames / self.sr
         
-        self.tempo = tempo
+        self.tempo = float(tempo)
 
     def add_clicks(self, magnitude=10, click_ms = 2, click_decay = 4):
         # Convert time of beats to impulse array

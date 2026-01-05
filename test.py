@@ -144,7 +144,7 @@ for pattern_name in PATTERNS.keys():
     song.mode = 1
     
     try:
-        BPM_preprocssing(song, cadence, dt=0.5)
+        BPM_preprocssing(song, cadence, dt=0.5, dr=0.01)
     except Exception as e:
         print(f"Skipping {pattern_name} due to error: {e}")
         continue

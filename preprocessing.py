@@ -56,7 +56,7 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
         if (current_time < W): # Init - use global SPM
             spm = float(cadence.tempo) if cadence.tempo is not None else 0.0
             bpm = float(song.tempo) if song.tempo is not None else 0.0
-            r = spm / bpm if bpm != 0 else 0
+            r = spm / bpm if (bpm != 0 and spm != 0) else 1.0
             
         else:
             start_idx = clip(time_to_samples(current_time - W, sr=sr), 0, N) 

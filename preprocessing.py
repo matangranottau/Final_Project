@@ -116,7 +116,8 @@ def phase_shift(song, cadence, r, start_time, end_time, debug=False):
         print(f"Cadence beats in range (first 10): {np.round(s[:10],2)}\n")
 
     if b.size == 0 or s.size == 0:
-        raise ValueError("No beats in the specified time range for phase shift calculation.")
+        return 0.0
+        
     
     N = min(b.size, s.size)
     phase_diffs = b[:N] - s[:N]

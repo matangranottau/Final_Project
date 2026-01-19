@@ -183,37 +183,17 @@ song.mode = 1
 # print(f"All preprocessing plots saved in: {output_folder}")
 
 
-# ## --- Test block: "Check Phase Shift Function" ###
-# test phase shift function
-# cadence = make_cadence(song, output="energy", segment_length=30.0)
-# ps = phase_shift(song, cadence, r=1.5, start_time=10.0, end_time=50.0, debug=True)
+## --- Test block: "Check Phase Shift Function" ###
 
+cadence = wave(None)
+song = wave(None)
 
-## --- Test block: "Check preprocessing with phase shift" ##
+cadence.beats = np.array([0.33, 0.66, 1.00, 1.33, 1.66, 2.00])  # Cadence beats at every 3rd position
+cadence.tempo = 180.0  # Cadence tempo 120 SPM
 
-cadence = make_cadence(song, pattern="noisy_natural", output="energy", segment_length=30.0)
-cadence.mode = 2
-preprocssing(song, cadence, dt=0.5, phase_mode=True, dr=0.01)
-# Show a graph with: song.tempo(Title or constant value on graph), cadence.spm_list (list of spm every dt = 0.5 sec), song.r_list(list of r every dt = 0.5 sec) - Save graph
-# Create time axis for the lists (0.5s steps)
-dt = 0.5
-time_axis = np.arange(len(cadence.spm_list)) * dt
-fig, ax1 = plt.subplots(figsize=(10, 6))
-# Plot SPM (Left Y-axis)
-color = 'tab:blue'
-ax1.set_xlabel('Time (s)')
-ax1.set_ylabel('Cadence SPM', color=color)
-ax1.plot(time_axis, cadence.spm_list, color=color, label='Detected SPM')
-ax1.tick_params(axis='y', labelcolor=color)
-ax1.grid(True, alpha=0.3)
-# Plot Ratio 'r' (Right Y-axis)
-ax2 = ax1.twinx()
-color = 'tab:red'
-ax2.set_ylabel('Ratio r (SPM/BPM)', color=color)
-ax2.plot(time_axis, song.r_list, color=color, linestyle='--', label='Ratio r')
-ax2.tick_params(axis='y', labelcolor=color)
-plt.title(f"Preprocessing Result with Phase Shift: Song Tempo ~{song.tempo:.1f} BPM")
-fig.tight_layout()
-plt.savefig("Plots/noisy_natural_with_phase_shift.png")
-plt.show()
+song.beats = np.array([0.03, 0.53, 1.03, 1.53, 2.03, 2.53, 3.03, 3.53, 4.03, 4.53])     # Song beats at every 3rd position, shifted by 1
+song.tempo = 120.0  # BPM
 
+ps = phase_shift(song, cadence, r=1.5, start_time=0.0, end_time=5.0, debug=True)
+
+print(f"Shifted song beats: {song.beats/1.5 + ps}")

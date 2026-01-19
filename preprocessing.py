@@ -90,7 +90,7 @@ def preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, k= 0.05, d
 def phase_shift(song, cadence, r, start_time, end_time, debug=False):
     # Assuming song and cadence beats are with the same "frequnecy" (after r adjustment)
     
-    if song.beats is None:
+    if song.beats is None or song.tempo is None:
         song.extract()
 
     if cadence.beats is None:

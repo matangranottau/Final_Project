@@ -1,7 +1,7 @@
 from oop import wave
 from cadence import make_cadence, PATTERNS
 from plotter import plot_audio_onsets_beats, plot_cadence_pattern
-from preprocessing import BPM_preprocssing, phase_shift
+from preprocessing import preprocssing, phase_shift
 from scipy.io.wavfile import write
 import numpy as np
 import os
@@ -185,5 +185,9 @@ song.mode = 1
 
 # ## --- Test block: "Check Phase Shift Function" ###
 # test phase shift function
-cadence = make_cadence(song, output="energy", segment_length=30.0)
-ps = phase_shift(song, cadence, r=1.0, start_time=10.0, end_time=50.0, debug=True)
+# cadence = make_cadence(song, output="energy", segment_length=30.0)
+# ps = phase_shift(song, cadence, r=1.5, start_time=10.0, end_time=50.0, debug=True)
+
+
+# ## --- Test block: "Check Phase Shift Function with no beats in range" ###
+

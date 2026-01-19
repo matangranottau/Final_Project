@@ -1,6 +1,6 @@
 import numpy as np
 from oop import wave
-from preprocessing import BPM_preprocssing
+from preprocessing import preprocssing
 from cadence import make_cadence
 import matplotlib.pyplot as plt
 import traceback
@@ -80,7 +80,7 @@ def run_constant_bpm_test():
 
     # 4. Run Preprocessing
     try:
-        BPM_preprocssing(song_obj, cadence_obj, dt=dt)
+        preprocssing(song_obj, cadence_obj, dt=dt)
         
         # 5. Analyze Results
         print(f"Librosa detected Song BPM: {song_obj.tempo:.2f}")
@@ -141,7 +141,7 @@ def run_cadence_class_integration():
 
     # 3. Run Processing
     try:
-        BPM_preprocssing(song_obj, cadence_obj, dt=0.5)
+        preprocssing(song_obj, cadence_obj, dt=0.5)
         print("Integration successful: preprocessing ran without errors.")
         
         # Verify it actually detected something

@@ -4,7 +4,7 @@ from helper_functions import clip, wrap
 from librosa import time_to_samples, samples_to_time
 from librosa.beat import beat_track
 
-def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, k= 0.05, dr = 0.02, phase_mode=True): #OFFLINE ONLY!!
+def preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, k= 0.05, dr = 0.02, phase_mode=True): #OFFLINE ONLY!!
     # Assumption 1: both song cadence is from wave class and not cadence class
     # Assumption 2: cadence is offline
     # Assumption 3: audio and cadence are with exact same length (in samples)

@@ -1,6 +1,6 @@
 import numpy as np
 from oop import wave
-from helper_functions import clip
+from helper_functions import clip, wrap
 from librosa import time_to_samples, samples_to_time
 from librosa.beat import beat_track
 
@@ -97,14 +97,14 @@ def phase_shift(song, cadence, r, start_time, end_time, debug=False):
         cadence.extract()
 
     if debug:
-        print(f"Original song beats (first 10): {song.beats[:10]}")
-        print(f"Cadence beats (first 10): {cadence.beats[:10]}")
+        print(f"Original song beats (first 10): {np.round(song.beats[:10],2)}")
+        print(f"Cadence beats (first 10): {np.round(cadence.beats[:10],2)}\n")
 
     b = (song.beats/r)
 
     if debug:
-        print(f"Adjusted song beats (first 10): {b[:10]}")
-        print(f"Cadence beats (first 10): {cadence.beats[:10]}")
+        print(f"Adjusted song beats (first 10): {np.round(b[:10],2)}")
+        print(f"Cadence beats (first 10): {np.round(cadence.beats[:10],2)}\n")
 
     b = b[(b >= start_time) & (b <= end_time)]
 
@@ -112,8 +112,8 @@ def phase_shift(song, cadence, r, start_time, end_time, debug=False):
     s = s[(s >= start_time) & (s <= end_time)]
 
     if debug:
-        print(f"Adjusted song beats in range (first 10): {b[:10]}")
-        print(f"Cadence beats in range (first 10): {s[:10]}")
+        print(f"Adjusted song beats in range (first 10): {np.round(b[:10],2)}")
+        print(f"Cadence beats in range (first 10): {np.round(s[:10],2)}\n")
 
     if b.size == 0 or s.size == 0:
         raise ValueError("No beats in the specified time range for phase shift calculation.")
@@ -122,7 +122,17 @@ def phase_shift(song, cadence, r, start_time, end_time, debug=False):
     phase_diffs = b[:N] - s[:N]
 
     if debug:
-        print(f"Phase differences (first 10): {phase_diffs[:10]}")
-        
-    return np.median(phase_diffs) # Postive phase -> song slower than cadence -> bigger r needed
+        print(f"Phase differences (first 10): {np.round(phase_diffs[:10],2)}\n")
+
+    theta = np.median(phase_diffs)
+
+    if debug:
+        print(f"Median phase difference (theta): {np.round(theta,2)}")
+
+    theta = wrap(theta, - (60.0 / float(song.tempo))/2 , (60.0 / float(song.tempo))/2 )
+
+    if debug:
+        print(f"Wrapped phase difference (theta): {np.round(theta,2)}")
+
+    return theta # Postive phase -> song slower than cadence -> bigger r needed
     

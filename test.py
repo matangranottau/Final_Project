@@ -151,7 +151,7 @@ song.mode = 1
 
 #     # --- D. Plotting (Logic from Test Block 4) ---
 #     dt = 0.5
-#     # cadence.spm_list is filled by BPM_preprocssing
+#     # cadence.list is filled by BPM_preprocssing
 #     # song.r_list is filled by BPM_preprocssing
 #     time_axis = np.arange(len(cadence.spm_list)) * dt
 
@@ -185,7 +185,5 @@ song.mode = 1
 
 # ## --- Test block: "Check Phase Shift Function" ###
 # test phase shift function
-cadence = make_cadence(song, pattern="noisy_natural", output="energy", segment_length=30.0)
-cadence.mode = 2
+cadence = make_cadence(song, output="energy", segment_length=30.0)
 ps = phase_shift(song, cadence, r=1.0, start_time=10.0, end_time=50.0, debug=True)
-print(f"Calculated Phase Shift: {ps} seconds")

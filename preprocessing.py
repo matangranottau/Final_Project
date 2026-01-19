@@ -4,7 +4,7 @@ from helper_functions import clip
 from librosa import time_to_samples, samples_to_time
 from librosa.beat import beat_track
 
-def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0.02): #OFFLINE ONLY!!
+def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, k= 0.05, dr = 0.02, phase_mode=True): #OFFLINE ONLY!!
     # Assumption 1: both song cadence is from wave class and not cadence class
     # Assumption 2: cadence is offline
     # Assumption 3: audio and cadence are with exact same length (in samples)
@@ -72,7 +72,11 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
             # Check double time - Helper function
             spm = alpha * spm_tilde + (1 - alpha) * spm
         
-            r_tilde = spm / bpm
+            if phase_mode:
+                r_tilde = (spm / bpm) + k * phase_shift(song, cadence, r, current_time - W, current_time)
+            else:
+                r_tilde = spm / bpm
+            
             r_tilde = clip(r_tilde, r_min, r_max)
 
             r_prev = r
@@ -83,11 +87,42 @@ def BPM_preprocssing(song, cadence, dt=0.5, W=5, alpha = 0.2, beta = 0.4, dr = 0
         (song.r_list).append(r)
 
 
-            
+def phase_shift(song, cadence, r, start_time, end_time, debug=False):
+    # Assuming song and cadence beats are with the same "frequnecy" (after r adjustment)
     
+    if song.beats is None:
+        song.extract()
 
+    if cadence.beats is None:
+        cadence.extract()
+
+    if debug:
+        print(f"Original song beats (first 10): {song.beats[:10]}")
+        print(f"Cadence beats (first 10): {cadence.beats[:10]}")
+
+    b = (song.beats/r)
+
+    if debug:
+        print(f"Adjusted song beats (first 10): {b[:10]}")
+        print(f"Cadence beats (first 10): {cadence.beats[:10]}")
+
+    b = b[(b >= start_time) & (b <= end_time)]
+
+    s = cadence.beats
+    s = s[(s >= start_time) & (s <= end_time)]
+
+    if debug:
+        print(f"Adjusted song beats in range (first 10): {b[:10]}")
+        print(f"Cadence beats in range (first 10): {s[:10]}")
+
+    if b.size == 0 or s.size == 0:
+        raise ValueError("No beats in the specified time range for phase shift calculation.")
     
+    N = min(b.size, s.size)
+    phase_diffs = b[:N] - s[:N]
 
-
-    
+    if debug:
+        print(f"Phase differences (first 10): {phase_diffs[:10]}")
+        
+    return np.median(phase_diffs) # Postive phase -> song slower than cadence -> bigger r needed
     

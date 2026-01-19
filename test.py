@@ -1,7 +1,7 @@
 from oop import wave
 from cadence import make_cadence, PATTERNS
 from plotter import plot_audio_onsets_beats, plot_cadence_pattern
-from preprocessing import BPM_preprocssing
+from preprocessing import BPM_preprocssing, phase_shift
 from scipy.io.wavfile import write
 import numpy as np
 import os
@@ -117,69 +117,75 @@ song.mode = 1
 # print("All noisy patterns generated and saved in /Plots folder.")
 
 ### --- Test block: Preprocessing & Ratio Plotting on All Noisy Patterns --- ###
-print("\n--- Running Preprocessing on All Noisy Patterns ---")
+# print("\n--- Running Preprocessing on All Noisy Patterns ---")
 
 # 1. Setup folders
-output_folder = "Plots/Cadence Making & Pre-Processing/Noisy Cadence - Impulse Train"
-os.makedirs(output_folder, exist_ok=True)
+# output_folder = "Plots/Cadence Making & Pre-Processing/Noisy Cadence - Impulse Train"
+# os.makedirs(output_folder, exist_ok=True)
 
-# 2. Loop through all patterns
-for pattern_name in PATTERNS.keys():
-    print(f"Processing {pattern_name}...")
+# # 2. Loop through all patterns
+# for pattern_name in PATTERNS.keys():
+#     print(f"Processing {pattern_name}...")
     
-    song.r_list = []
+#     song.r_list = []
 
-    # --- B. Create Noisy Cadence ---
-    cadence = make_cadence(song, 
-                           pattern=pattern_name, 
-                           output="energy", 
-                           segment_length=30.0, 
-                           noise_std=2.0,   # Add your noise here
-                           drift_std=0.5,
-                           seed=42)
+#     # --- B. Create Noisy Cadence ---
+#     cadence = make_cadence(song, 
+#                            pattern=pattern_name, 
+#                            output="energy", 
+#                            segment_length=30.0, 
+#                            noise_std=2.0,   # Add your noise here
+#                            drift_std=0.5,
+#                            seed=42)
     
-    # --- C. Set Modes & Run Preprocessing ---
-    cadence.mode = 2
-    # song.mode is likely already 1, but we can ensure it:
-    song.mode = 1
+#     # --- C. Set Modes & Run Preprocessing ---
+#     cadence.mode = 2
+#     # song.mode is likely already 1, but we can ensure it:
+#     song.mode = 1
     
-    try:
-        BPM_preprocssing(song, cadence, dt=0.5, dr=0.01)
-    except Exception as e:
-        print(f"Skipping {pattern_name} due to error: {e}")
-        continue
+#     try:
+#         BPM_preprocssing(song, cadence, dt=0.5, dr=0.01)
+#     except Exception as e:
+#         print(f"Skipping {pattern_name} due to error: {e}")
+#         continue
 
-    # --- D. Plotting (Logic from Test Block 4) ---
-    dt = 0.5
-    # cadence.spm_list is filled by BPM_preprocssing
-    # song.r_list is filled by BPM_preprocssing
-    time_axis = np.arange(len(cadence.spm_list)) * dt
+#     # --- D. Plotting (Logic from Test Block 4) ---
+#     dt = 0.5
+#     # cadence.spm_list is filled by BPM_preprocssing
+#     # song.r_list is filled by BPM_preprocssing
+#     time_axis = np.arange(len(cadence.spm_list)) * dt
 
-    fig, ax1 = plt.subplots(figsize=(10, 6))
+#     fig, ax1 = plt.subplots(figsize=(10, 6))
 
-    # Plot SPM (Left Y-axis)
-    color = 'tab:blue'
-    ax1.set_xlabel('Time (s)')
-    ax1.set_ylabel('Cadence SPM', color=color)
-    ax1.plot(time_axis, cadence.spm_list, color=color, label='Detected SPM')
-    ax1.tick_params(axis='y', labelcolor=color)
-    ax1.grid(True, alpha=0.3)
+#     # Plot SPM (Left Y-axis)
+#     color = 'tab:blue'
+#     ax1.set_xlabel('Time (s)')
+#     ax1.set_ylabel('Cadence SPM', color=color)
+#     ax1.plot(time_axis, cadence.spm_list, color=color, label='Detected SPM')
+#     ax1.tick_params(axis='y', labelcolor=color)
+#     ax1.grid(True, alpha=0.3)
 
-    # Plot Ratio 'r' (Right Y-axis)
-    ax2 = ax1.twinx()  
-    color = 'tab:red'
-    ax2.set_ylabel('Ratio r (SPM/BPM)', color=color)
-    ax2.plot(time_axis, song.r_list, color=color, linestyle='--', label='Ratio r')
-    ax2.tick_params(axis='y', labelcolor=color)
+#     # Plot Ratio 'r' (Right Y-axis)
+#     ax2 = ax1.twinx()  
+#     color = 'tab:red'
+#     ax2.set_ylabel('Ratio r (SPM/BPM)', color=color)
+#     ax2.plot(time_axis, song.r_list, color=color, linestyle='--', label='Ratio r')
+#     ax2.tick_params(axis='y', labelcolor=color)
 
-    plt.title(f"Preprocessing: {pattern_name} (Noise=2.0)")
-    fig.tight_layout()
+#     plt.title(f"Preprocessing: {pattern_name} (Noise=2.0)")
+#     fig.tight_layout()
 
-    # --- E. Save ---
-    save_path = f"{output_folder}/preproc_{pattern_name}.png"
-    plt.savefig(save_path)
-    plt.close() # Close figure to free memory
+#     # --- E. Save ---
+#     save_path = f"{output_folder}/preproc_{pattern_name}.png"
+#     plt.savefig(save_path)
+#     plt.close() # Close figure to free memory
 
-print(f"All preprocessing plots saved in: {output_folder}")
+# print(f"All preprocessing plots saved in: {output_folder}")
 
 
+# ## --- Test block: "Check Phase Shift Function" ###
+# test phase shift function
+cadence = make_cadence(song, pattern="noisy_natural", output="energy", segment_length=30.0)
+cadence.mode = 2
+ps = phase_shift(song, cadence, r=1.0, start_time=10.0, end_time=50.0, debug=True)
+print(f"Calculated Phase Shift: {ps} seconds")

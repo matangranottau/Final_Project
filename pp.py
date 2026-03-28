@@ -244,6 +244,9 @@ def phase_pp_l1_shifted(sna_abs, run_abs, t_start, d, debug=False):
     half_weight = np.sum(weights) / 2.0
     cumulative_weight = np.cumsum(weights_sorted)
     optimal_index = np.searchsorted(cumulative_weight, half_weight)
+
+    if optimal_index >= len(x_sorted):
+        optimal_index = len(x_sorted) - 1  # Handle edge case where searchsorted returns out of bounds
     
     x_opt = x_sorted[optimal_index]
     r_opt = 1.0 / x_opt  # Convert back to speed-up ratio r

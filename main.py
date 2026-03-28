@@ -19,7 +19,7 @@ def save_audio(file_path, x, sr):
 #===================================
 debug = True
 preload_audio = True
-path = "Songs\Seven Nations Army.mp3"
+path = "Songs\Seven Nation Army.mp3"
 segment = 2.5  # Segment Duration in seconds
 r_nom = np.array([1.0,1.02,1.04,1.06,1.08])  # Nominal ratios for steps
 std_dev = 0.05
@@ -43,7 +43,7 @@ if preload_audio:
         np.save('sna_sr.npy', sna_sr)
         np.save('sna_BPM.npy', sna_BPM)
         np.save('sna_beats.npy', sna_beats)
-        
+
     sna = np.load('sna.npy')
     sna_sr = np.load('sna_sr.npy')
     sna_BPM = np.load('sna_BPM.npy')
@@ -58,7 +58,7 @@ else:
     sna, sna_sr = pp.load_audio(path, debug=debug)
     sna_BPM, sna_beats = pp.beat_tracking(sna, sna_sr, debug=debug)
 
-run_SPM, run_steps , r_nom_extended = pp.create_run_steps(sna_beats, sna_BPM, r_nom, std_dev, debug=debug)
+run_SPM, run_steps = pp.create_run_steps(sna_beats, sna_BPM, r_nom, std_dev, debug=debug)
 
 M,N = pp.trim_dim(sna_beats, sna_BPM, segment, debug=debug)
 sna_mat = pp.reshape_vector(sna_beats, M, N, debug=debug, debug_name="Seven Nations Army")

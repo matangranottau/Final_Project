@@ -14,6 +14,25 @@ def save_audio(file_path, x, sr):
         x = x / (max_val + 1e-10)
     sf.write(file_path, x, sr)
 
+def add_clicks(signal, beats, sr, magnitude=10, click_ms = 2, click_decay = 4):
+    # Convert beat times (in seconds) to sample indices
+    click_samples = np.round(beats * sr).astype(int)
+    click_samples = click_samples[(click_samples >= 0) & (click_samples < len(signal))]
+        
+    # Create click envelope (exponential decay)
+    click_duration_samples = int(click_ms * sr / 1000)
+    click_envelope = np.exp(-np.arange(click_duration_samples) / (click_decay * sr / 1000))
+    click_waveform = magnitude * click_envelope
+        
+    # Add clicks to signal
+    signal_with_clicks = signal.copy()
+    for click_sample in click_samples:
+        end_sample = min(click_sample + click_duration_samples, len(signal_with_clicks))
+        click_len = end_sample - click_sample
+        signal_with_clicks[click_sample:end_sample] += click_waveform[:click_len]
+        
+    return signal_with_clicks
+
 #===================================
 ########## PP - Parameters ##########
 #===================================
@@ -193,13 +212,16 @@ print("Saving Output...")
 save_audio(os.path.join(output_dir, "Dynamic_Runner_Song.wav"), final_song, sna_sr)
 print("Done! Go listen to the tempo ramp up and down.")
 
+final_song_clicked = add_clicks(final_song, run_steps, sna_sr)
+save_audio(os.path.join(output_dir, "Dynamic_Runner_Song_Clicked.wav"), final_song_clicked, sna_sr)
+
 end = time.time()
-print(f"~ TSM time: {1000*(end-pp_time):.3f} msec ~\n")
+print(f"~ TSM time: {(end-pp_time):.3f} sec ~\n")
 
 
 
-print(f"~~ Average Segment Latency: {1000*(end-start)/N:.3f} msec ~~\n")
-print(f"~~ Elapsed Time: {1000*(end-start):.3f} msec ~~")
+print(f"~~ Average Segment Latency: {(end-start)/N:.3f} sec ~~\n")
+print(f"~~ Elapsed Time: {(end-start):.3f} sec ~~")
 print("~~ END OF PROGRAM ~~\n")
 
 

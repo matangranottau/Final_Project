@@ -50,7 +50,7 @@ std_dev = 0.05
 start = time.time()
 
 #===================================
-########## PreProcessing ##########
+########## Pre-Processing ##########
 #===================================
 
 if preload_audio:
@@ -208,6 +208,10 @@ for chunk_index, start_idx in enumerate(range(0, len(sna), chunk_samples)):
 print("Stitching dynamic chunks together...")
 final_song = np.concatenate(final_output)
 
+#===================================
+########## Output Saving ##########
+#===================================
+
 print("Saving Output...")
 save_audio(os.path.join(output_dir, "Dynamic_Runner_Song.wav"), final_song, sna_sr)
 print("Done! Go listen to the tempo ramp up and down.")
@@ -215,11 +219,11 @@ print("Done! Go listen to the tempo ramp up and down.")
 final_song_clicked = add_clicks(final_song, run_steps, sna_sr)
 save_audio(os.path.join(output_dir, "Dynamic_Runner_Song_Clicked.wav"), final_song_clicked, sna_sr)
 
+#===================================
+########## End of Simulation #######
+#===================================
 end = time.time()
 print(f"~ TSM time: {(end-pp_time):.3f} sec ~\n")
-
-
-
 print(f"~~ Average Segment Latency: {(end-start)/N:.3f} sec ~~\n")
 print(f"~~ Elapsed Time: {(end-start):.3f} sec ~~")
 print("~~ END OF PROGRAM ~~\n")

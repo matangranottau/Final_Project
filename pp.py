@@ -24,6 +24,10 @@ def cute_print(array):
             print(f'{array[:,:10]}\n')
         if array.ndim == 3:
             print(f'{array[:,0,:]}\n')
+            
+def spm_to_r_nom(spm,BPM):
+    """Convert steps per minute to nominal ratio."""
+    return spm/BPM
 
 def load_audio(file_path, debug=False):
     """Load an audio file."""

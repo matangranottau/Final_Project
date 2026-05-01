@@ -1,8 +1,18 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import threading
+import matplotlib.pyplot as plt 
+import os # Added to handle folders
 
-app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+# ==============================================================================
+#  IMPORT YOUR ALGORITHM HERE
+# Assuming your algorithm is in a file named "my_audio_algorithm.py" 
+# and the main function is called "process_music"
+# ==============================================================================
+# from my_audio_algorithm import process_music 
+
+app = Flask(__name__, static_folder='static') # Added static_folder for audio streaming
+CORS(app) 
 
 def calculate_syncrun_spm(height_cm, speed_kmh):
     if height_cm <= 0 or speed_kmh <= 0:
@@ -11,7 +21,6 @@ def calculate_syncrun_spm(height_cm, speed_kmh):
     height_m = height_cm / 100.0
     speed_m_per_min = speed_kmh * (1000.0 / 60.0)
 
-    # The dynamic step ratio
     dynamic_ratio = 0.35 + (speed_kmh * 0.025)
     dynamic_ratio = max(0.40, min(dynamic_ratio, 0.80))
 
@@ -20,82 +29,64 @@ def calculate_syncrun_spm(height_cm, speed_kmh):
     pulse_interval_ms = 60000 / spm
 
     return {
-        "height_cm": height_cm,
-        "speed_kmh": speed_kmh,
-        "calculated_ratio": round(dynamic_ratio, 3),
         "spm": round(spm),
         "pulse_interval_ms": round(pulse_interval_ms)
     }
 
-def generate_practice_array(height_cm, starting_speed_kmh, intervals=5, speed_jump=2.0):
+def generate_chunked_array_manual(height_cm, speeds_list, interval_sec):
     """
-    Generates an array of target SPMs for an interval run.
-    Each element represents the target SPM for that specific chunk/interval.
+    Generates the exact 2.5s chunk array based on a manual list of speeds.
     """
+    chunk_sec = 2.5
+    chunks_per_interval = int(interval_sec / chunk_sec)
+    
     target_spms = []
-    current_speed = starting_speed_kmh
-
-    for _ in range(intervals):
-        height_m = height_cm / 100.0
-        speed_m_per_min = current_speed * (1000.0 / 60.0)
-
-        dynamic_ratio = 0.35 + (current_speed * 0.025)
-        dynamic_ratio = max(0.40, min(dynamic_ratio, 0.80))
-
-        step_length_m = height_m * dynamic_ratio
-        spm = speed_m_per_min / step_length_m
+    
+    for speed in speeds_list:
+        # Calculate SPM for this specific interval's speed
+        spm = calculate_syncrun_spm(height_cm, speed)["spm"]
         
-        target_spms.append(round(spm))
-        current_speed += speed_jump
-
+        # Duplicate that SPM for exactly the right number of 2.5s chunks
+        target_spms.extend([spm] * chunks_per_interval)
+        
     return target_spms
 
-@app.route('/api/calculate', methods=['POST'])
-def calculate():
+@app.route('/api/start_run', methods=['POST'])
+def start_run():
     data = request.json
     height = data.get('height_cm', 175)
-    speed = data.get('speed_kmh', 10.0)
+    interval_sec = data.get('interval_sec', 60)
+    speeds_list = data.get('speeds_list', [10.0]) 
+    song_name = data.get('song_name', 'Seven Nation Army') # Added Song Name!
     
-    result = calculate_syncrun_spm(height, speed)
-    return jsonify(result)
+    # 1. Generate your 2.5-second chunk array
+    spm_array = generate_chunked_array_manual(height, speeds_list, interval_sec)
+    
+    # ==========================================
+    # Print the raw numbers to your Python terminal:
+    print(f"\n--- GENERATED SPM ARRAY ({len(spm_array)} chunks) ---")
+    print(spm_array)
+    print("------------------------------------------------\n")
+    
 
-@app.route('/api/practice_array', methods=['POST'])
-def practice_array():
-    """
-    API endpoint to get the entire 5-minute array at once via HTTP POST.
-    """
-    data = request.json
-    height = data.get('height_cm', 175)
-    speed = data.get('starting_speed_kmh', 10.0)
-    intervals = data.get('intervals', 5)
-    speed_jump = data.get('speed_jump', 2.0)
+    # 2. TRIGGER YOUR ALGORITHM IN THE BACKGROUND
+    # Pass the song_name and spm_array to your algorithm!
+    # algo_thread = threading.Thread(target=process_music, args=(song_name, spm_array,))
+    # algo_thread.start()
     
-    result_array = generate_practice_array(height, speed, intervals, speed_jump)
-    return jsonify({"target_spms": result_array})
+    # 3. Calculate specs
+    starting_specs = calculate_syncrun_spm(height, speeds_list[0])
+    processed_audio_url = "http://127.0.0.1:5000/static/processed_output.mp3"
+    
+    return jsonify({
+        "status": "Algorithm Started",
+        "starting_spm": starting_specs["spm"],
+        "starting_pulse_ms": starting_specs["pulse_interval_ms"],
+        "processed_audio_url": processed_audio_url # Return the streaming URL
+    })
 
 if __name__ == '__main__':
-    # host='0.0.0.0' allows external connections (like your phone or emulator)
+    # Automatically create the 'static' folder if it doesn't exist
+    if not os.path.exists('static'):
+        os.makedirs('static')
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
-    ''' how to use generate
-    
-        # Import the function from your api.py file
-    from api import generate_practice_array
-
-    # Call it before you start processing the audio chunks
-    user_height = 175
-    user_start_speed = 10
-
-    bpm_targets = generate_practice_array(user_height, user_start_speed)
-
-    # bpm_targets now equals exactly: [159, 176, 190, 203, 214]
-    print(f"I need to stretch the audio chunks to these BPMs: {bpm_targets}")
-
-    # Loop through your audio chunks here...
-        
-        
-    
-    
-    
-    '''

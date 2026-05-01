@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:async'; // Needed for the Interval Timer
-import 'package:audioplayers/audioplayers.dart'; // Needed for Music
+import 'dart:async'; 
+import 'package:audioplayers/audioplayers.dart'; // Added Audioplayers back!
 
 void main() {
   runApp(const SyncRunApp());
@@ -37,24 +37,29 @@ class InputScreen extends StatefulWidget {
 
 class _InputScreenState extends State<InputScreen> {
   int _heightCm = 175;
-  double _speedKmh = 10.0;
   bool _isLoading = false;
   
-  // New State Variables for the Dropdowns
   String _selectedMode = "Free Run";
-  String _selectedSong = "Seven Nation Army";
+  int _intervalDurationSec = 60; 
+  String _selectedSong = "Seven Nation Army"; // Added Song State
+  
+  List<double> _speedsList = [10.0];
 
   Future<void> _startRun() async {
     setState(() => _isLoading = true);
 
-    // Using 127.0.0.1 for Chrome/Web as we discussed!
-    final url = Uri.parse('http://127.0.0.1:5000/api/calculate'); 
+    final url = Uri.parse('http://127.0.0.1:5000/api/start_run'); 
 
     try {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"height_cm": _heightCm, "speed_kmh": _speedKmh}),
+        body: jsonEncode({
+          "height_cm": _heightCm, 
+          "interval_sec": _selectedMode == "Free Run" ? 9999 : _intervalDurationSec, 
+          "speeds_list": _speedsList,
+          "song_name": _selectedSong // Sending the selected song
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -67,12 +72,14 @@ class _InputScreenState extends State<InputScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => PulseScreen(
-              initialSpm: data["spm"],
-              initialIntervalMs: data["pulse_interval_ms"],
+              initialSpm: data["starting_spm"],
+              initialIntervalMs: data["starting_pulse_ms"],
               heightCm: _heightCm,
-              initialSpeed: _speedKmh,
+              speedsList: _speedsList,
               mode: _selectedMode,
+              intervalDurationSec: _intervalDurationSec,
               songName: _selectedSong,
+              processedAudioUrl: data["processed_audio_url"], // Receiving the URL
             ),
           ),
         );
@@ -90,7 +97,7 @@ class _InputScreenState extends State<InputScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView( // Added scroll view so keyboards/small screens don't cut off
+        child: SingleChildScrollView( 
           padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -113,7 +120,22 @@ class _InputScreenState extends State<InputScreen> {
               ),
               const SizedBox(height: 40),
 
-              // Mode Selection Dropdown
+              // Height Selection
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Height: $_heightCm cm", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Slider(
+                    value: _heightCm.toDouble(),
+                    min: 90, max: 230, divisions: 140,
+                    activeColor: Colors.black, inactiveColor: Colors.grey.shade300,
+                    onChanged: (val) => setState(() => _heightCm = val.round()),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              // Mode Selection
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade300)),
@@ -122,8 +144,15 @@ class _InputScreenState extends State<InputScreen> {
                     isExpanded: true,
                     value: _selectedMode,
                     icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                    onChanged: (String? newValue) => setState(() => _selectedMode = newValue!),
-                    items: <String>['Free Run', '5-Min Interval Practice']
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedMode = newValue!;
+                        if (_selectedMode == "Free Run") {
+                          _speedsList = [_speedsList[0]];
+                        }
+                      });
+                    },
+                    items: <String>['Free Run', 'Interval Practice']
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(value: value, child: Text(value, style: const TextStyle(fontSize: 16)));
                     }).toList(),
@@ -132,7 +161,7 @@ class _InputScreenState extends State<InputScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Song Selection Dropdown
+              // Song Selection
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade300)),
@@ -149,41 +178,73 @@ class _InputScreenState extends State<InputScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
-
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Height: $_heightCm cm", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Slider(
-                    value: _heightCm.toDouble(),
-                    min: 90, max: 230, divisions: 140,
-                    activeColor: Colors.black, inactiveColor: Colors.grey.shade300,
-                    onChanged: (val) => setState(() => _heightCm = val.round()),
-                  ),
-                ],
-              ),
               const SizedBox(height: 20),
 
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Starting Speed: ${_speedKmh.toStringAsFixed(1)} km/h", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  Slider(
-                    value: _speedKmh,
-                    min: 1.0, max: 25.0, divisions: 240,
-                    activeColor: Colors.black, inactiveColor: Colors.grey.shade300,
-                    onChanged: (val) => setState(() => _speedKmh = val),
+              if (_selectedMode == 'Interval Practice') ...[
+                // Interval Duration
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade300)),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      value: _intervalDurationSec,
+                      icon: const Icon(Icons.timer, color: Colors.black),
+                      onChanged: (int? newValue) => setState(() => _intervalDurationSec = newValue!),
+                      items: <int>[15, 20, 25, 60]
+                          .map<DropdownMenuItem<int>>((int value) {
+                        return DropdownMenuItem<int>(value: value, child: Text("$value Seconds per Interval", style: const TextStyle(fontSize: 16)));
+                      }).toList(),
+                    ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // DYNAMIC SPEED INPUTS
+              ...List.generate(_speedsList.length, (index) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _selectedMode == 'Free Run' ? "Run Speed: ${_speedsList[index].toStringAsFixed(1)} km/h" : "Interval ${index + 1} Speed: ${_speedsList[index].toStringAsFixed(1)} km/h", 
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                        ),
+                        if (_selectedMode == 'Interval Practice' && index > 0)
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () => setState(() => _speedsList.removeAt(index)),
+                          )
+                      ],
+                    ),
+                    Slider(
+                      value: _speedsList[index],
+                      min: 1.0, max: 25.0, divisions: 240,
+                      activeColor: Colors.blueAccent, inactiveColor: Colors.grey.shade300,
+                      onChanged: (val) => setState(() => _speedsList[index] = val),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                );
+              }),
+
+              if (_selectedMode == 'Interval Practice')
+                TextButton.icon(
+                  onPressed: () => setState(() => _speedsList.add(10.0)), 
+                  icon: const Icon(Icons.add_circle, color: Colors.black),
+                  label: const Text("ADD INTERVAL", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+
               const SizedBox(height: 50),
 
               SizedBox(
                 width: double.infinity, height: 55,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue, foregroundColor: Colors.white,
+                    backgroundColor: Colors.black, foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
                   onPressed: _isLoading ? null : _startRun,
@@ -205,18 +266,22 @@ class PulseScreen extends StatefulWidget {
   final int initialSpm;
   final int initialIntervalMs;
   final int heightCm;
-  final double initialSpeed;
+  final List<double> speedsList;
   final String mode;
-  final String songName;
+  final String songName; // Needed for display
+  final int intervalDurationSec;
+  final String processedAudioUrl; // Needed for streaming
 
   const PulseScreen({
     super.key, 
     required this.initialSpm, 
     required this.initialIntervalMs,
     required this.heightCm,
-    required this.initialSpeed,
+    required this.speedsList,
     required this.mode,
-    required this.songName
+    required this.songName,
+    required this.intervalDurationSec,
+    required this.processedAudioUrl,
   });
 
   @override
@@ -226,32 +291,27 @@ class PulseScreen extends StatefulWidget {
 class _PulseScreenState extends State<PulseScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  late AudioPlayer _audioPlayer;
-  Timer? _intervalTimer;
+  late AudioPlayer _audioPlayer; // AudioPlayer is back!
+  Timer? _uiSyncTimer;
 
-  // Mutable state variables that will update during the 5-min practice
   late int _currentSpm;
   late int _currentIntervalMs;
   late double _currentSpeed;
-  int _minutesPassed = 0;
+  int _currentIntervalIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _currentSpm = widget.initialSpm;
     _currentIntervalMs = widget.initialIntervalMs;
-    _currentSpeed = widget.initialSpeed;
+    _currentSpeed = widget.speedsList[0];
 
-    // 1. Setup Audio Player
     _audioPlayer = AudioPlayer();
-    _playSong();
-
-    // 2. Setup Animation
+    _playProcessedSong(); 
     _setupAnimation();
 
-    // 3. Setup Practice Timer (if mode is selected)
-    if (widget.mode == '5-Min Interval Practice') {
-      _startPracticeTimer();
+    if (widget.mode == 'Interval Practice' && widget.speedsList.length > 1) {
+      _startUiSyncTimer();
     }
   }
 
@@ -266,70 +326,49 @@ class _PulseScreenState extends State<PulseScreen> with SingleTickerProviderStat
     _controller.repeat(reverse: true);
   }
 
-  Future<void> _playSong() async {
-    // Map the selected song name to the correct filename
-    String fileName = widget.songName == 'Seven Nation Army' 
-        ? 'seven_nation_army.mp3' 
-        : 'dancing_queen.mp3';
-    
-    // Play the audio from the assets folder
-    await _audioPlayer.play(AssetSource(fileName));
+  // This is where it streams the processed song from your Python static folder!
+  Future<void> _playProcessedSong() async {
+    await _audioPlayer.play(UrlSource(widget.processedAudioUrl));
   }
 
-  void _startPracticeTimer() {
-    // This timer ticks exactly once every 60 seconds
-    _intervalTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
-      _minutesPassed++;
+  void _startUiSyncTimer() {
+    _uiSyncTimer = Timer.periodic(Duration(seconds: widget.intervalDurationSec), (timer) {
+      _currentIntervalIndex++;
 
-      if (_minutesPassed >= 5) {
-        timer.cancel(); // Stop the interval changes after 5 minutes
+      if (_currentIntervalIndex >= widget.speedsList.length) {
+        _haltRun();
         return;
       }
 
-      // Increase speed by 2 km/h
-      double newSpeed = _currentSpeed + 2.0;
+      double nextSpeed = widget.speedsList[_currentIntervalIndex];
+      
+      double dynamicRatio = 0.35 + (nextSpeed * 0.025);
+      dynamicRatio = dynamicRatio.clamp(0.40, 0.80);
+      double spm = (nextSpeed * (1000.0 / 60.0)) / ((widget.heightCm / 100.0) * dynamicRatio);
+      
+      setState(() {
+        _currentSpeed = nextSpeed;
+        _currentSpm = spm.round();
+        _currentIntervalMs = (60000 / spm).round();
+      });
 
-      // Ask Python for the new SPM based on the new speed
-      final url = Uri.parse('http://127.0.0.1:5000/api/calculate'); 
-      try {
-        final response = await http.post(
-          url,
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({"height_cm": widget.heightCm, "speed_kmh": newSpeed}),
-        );
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          
-          setState(() {
-            _currentSpeed = newSpeed;
-            _currentSpm = data["spm"];
-            _currentIntervalMs = data["pulse_interval_ms"];
-          });
-
-          // Update the animation to pulse at the new, faster rate!
-          _controller.duration = Duration(milliseconds: _currentIntervalMs ~/ 2);
-          _controller.reset();
-          _controller.repeat(reverse: true);
-        }
-      } catch (e) {
-        print("Error fetching new interval: $e");
-      }
+      _controller.duration = Duration(milliseconds: _currentIntervalMs ~/ 2);
+      _controller.reset();
+      _controller.repeat(reverse: true);
     });
   }
 
-  // --- THE HALT FUNCTION ---
   void _haltRun() {
-    _intervalTimer?.cancel(); // Kill the timer
-    _audioPlayer.stop();      // Kill the music
-    Navigator.pop(context);   // Go back to the first screen
+    _uiSyncTimer?.cancel();
+    _audioPlayer.stop(); // Stops the music
+    if (mounted) Navigator.pop(context);   
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _intervalTimer?.cancel();
-    _audioPlayer.dispose(); // Stop the music when leaving the screen
+    _uiSyncTimer?.cancel();
+    _audioPlayer.dispose(); // Cleans up the audio player
     super.dispose();
   }
 
@@ -346,21 +385,18 @@ class _PulseScreenState extends State<PulseScreen> with SingleTickerProviderStat
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Display Song Name
             Text(
-              "🎵 ${widget.songName}",
+              "🎵 ${widget.songName}", // Shows the song name on screen
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w500, letterSpacing: 1),
             ),
             const SizedBox(height: 10),
             
-            // Display Current Mode & Speed
             Text(
               "${widget.mode} • ${_currentSpeed.toStringAsFixed(1)} km/h",
               style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 60),
 
-            // The Pulsing Ball
             AnimatedBuilder(
               animation: _scaleAnimation,
               builder: (context, child) {
@@ -382,14 +418,12 @@ class _PulseScreenState extends State<PulseScreen> with SingleTickerProviderStat
             ),
             const SizedBox(height: 60),
             
-            // Subtle SPM display
             Text(
               "$_currentSpm SPM",
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w300, color: Colors.grey, letterSpacing: 2),
             ),
             const SizedBox(height: 40),
 
-            // --- THE HALT BUTTON ---
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,

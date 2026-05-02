@@ -52,14 +52,14 @@ def create_run_steps(beats, BPM, r_nom, std_dev=0.04, debug=False):
     """Create run steps based on beats and a nominal ratio."""
     L = len(beats)
    # FIX 1: Over-repeat the array, then slice it to exactly length L
-    repeats_per_element = int(np.ceil(L / len(r_nom)))
-    r_nom_extended = np.repeat(r_nom, repeats_per_element)[:L]
+    beats_per_chunk = int(np.ceil(L / len(r_nom)))
+    r_nom_extended = np.repeat(r_nom, beats_per_chunk)[:L]
     
     # FIX 2: Use true division (/) to preserve precise sub-second timestamps
     run_steps = beats / r_nom_extended
     dc = 60.0 / BPM / r_nom_extended  # Duration between steps
 
-    e = np.random.normal(0, np.max(dc)*std_dev, size=L)  # Random variability
+    e = np.random.normal(0, np.min(dc)*std_dev, size=L)  # Random variability
     for i in range(1, L):
         run_steps[i] = run_steps[i-1] + dc[i] + e[i]  # Add variability to steps
     run_SPM = 60 / dc  # Steps per minute
@@ -78,7 +78,7 @@ def create_run_steps(beats, BPM, r_nom, std_dev=0.04, debug=False):
         print(f"Run Steps:")
         cute_print(run_steps)
 
-    return run_SPM, run_steps
+    return run_steps
 
 def trim_dim(vect, events_per_minute, segment, debug=False):
     """Get dimensions for trimming a vector into segments."""

@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from main import process_music # Import your algorithm's main function
 import threading
 import matplotlib.pyplot as plt 
 import os # Added to handle folders
+
 
 # ==============================================================================
 #  IMPORT YOUR ALGORITHM HERE
@@ -12,7 +14,7 @@ import os # Added to handle folders
 # from my_audio_algorithm import process_music 
 
 app = Flask(__name__, static_folder='static') # Added static_folder for audio streaming
-CORS(app) 
+CORS(app)
 
 def calculate_syncrun_spm(height_cm, speed_kmh):
     if height_cm <= 0 or speed_kmh <= 0:

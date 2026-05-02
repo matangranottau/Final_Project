@@ -78,7 +78,8 @@ def process_music(song_path, spm_array):
         sna, sna_sr = pp.load_audio(path, debug=debug)
         sna_BPM, sna_beats = pp.beat_tracking(sna, sna_sr, debug=debug)
 
-    run_SPM, run_steps = pp.create_run_steps(sna_beats, sna_BPM, r_nom, std_dev, debug=debug)
+    r_nom = pp.spm_to_r_nom(spm,sna_BPM)
+    run_steps = pp.create_run_steps(sna_beats, sna_BPM, r_nom, std_dev, debug=debug)
 
     M,N = pp.trim_dim(sna_beats, sna_BPM, segment, debug=debug)
     sna_mat = pp.reshape_vector(sna_beats, M, N, debug=debug, debug_name="Seven Nations Army")
@@ -231,6 +232,6 @@ def process_music(song_path, spm_array):
 
 
 if __name__ == '__main__':
-    process_music("Songs\Seven Nation Army.mp3", [10.0, 12.0, 14.0, 16.0, 18.0, 20.0])
+    process_music("Songs\Seven Nation Army.mp3", [124*1.0, 124*1.05, 124*1.1, 124*1.15])
 
 

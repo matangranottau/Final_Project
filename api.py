@@ -59,6 +59,45 @@ def generate_chunked_array_manual(height_cm, speeds_list, interval_sec):
         
     return target_spms
 
+def calculate_interval_metadata(drift_array, spm_array, interval_sec, segment_duration=2.5):
+    """
+    Pre-calculate interval boundaries accounting for drift.
+    Returns: list of intervals with {start_time_ms, end_time_ms, spm}
+    """
+    intervals = []
+    current_time_sec = 0.0
+    chunks_per_interval = int(interval_sec / segment_duration)
+    num_intervals = len(drift_array) // chunks_per_interval
+    
+    for i in range(num_intervals):
+        start_chunk_idx = i * chunks_per_interval
+        end_chunk_idx = (i + 1) * chunks_per_interval
+        
+        # Get SPM values for this interval
+        interval_spms = spm_array[start_chunk_idx:end_chunk_idx]
+        interval_drifts = drift_array[start_chunk_idx:end_chunk_idx]
+        
+        # Sum drift for this interval to get time adjustment
+        total_drift_sec = sum(interval_drifts)
+        
+        # Actual duration = baseline + accumulated drift for this interval
+        baseline_duration = chunks_per_interval * segment_duration
+        actual_duration = baseline_duration + total_drift_sec
+        
+        # Use first segment's SPM as the display SPM
+        display_spm = int(interval_spms[0])
+        
+        intervals.append({
+            "start_time_ms": int(current_time_sec * 1000),
+            "end_time_ms": int((current_time_sec + actual_duration) * 1000),
+            "spm": display_spm,
+            "duration_sec": actual_duration
+        })
+        
+        current_time_sec += actual_duration
+    
+    return intervals
+
 @app.route('/api/start_run', methods=['POST'])
 def start_run():
     data = request.json
@@ -79,10 +118,12 @@ def start_run():
     
 
     # 2. TRIGGER YOUR ALGORITHM IN THE BACKGROUND
-    # Pass the song_name and spm_array to your algorithm!
-    algo_thread = threading.Thread(target=process_music, args=(song_path, spm_array))
-    algo_thread.start()
-    algo_thread.join()  # Block until the thread completes
+    # Pass the song_name and spm_array to your algorithm and capture the result
+    result = process_music(song_path, spm_array)
+    drift_array = result.get('drift_array', []) if result else []
+    
+    # NEW: Calculate interval metadata accounting for drift
+    intervals = calculate_interval_metadata(drift_array, spm_array, interval_sec)
     
     # 3. Calculate specs
     starting_specs = calculate_syncrun_spm(height, speeds_list[0])
@@ -92,7 +133,8 @@ def start_run():
         "status": "Algorithm Started",
         "starting_spm": starting_specs["spm"],
         "starting_pulse_ms": starting_specs["pulse_interval_ms"],
-        "processed_audio_url": processed_audio_url # Return the streaming URL
+        "processed_audio_url": processed_audio_url,
+        "intervals": intervals  # NEW: Pre-calculated interval data
     })
 
 if __name__ == '__main__':

@@ -85,19 +85,23 @@ def process_music(song_path, spm_array):
     sna_mat = pp.reshape_vector(sna_beats, M, N, debug=debug, debug_name="Seven Nations Army")
     run_mat = pp.reshape_vector(run_steps, M, N, debug=debug, debug_name="Run Steps")
 
-    d = 0
+    drift = np.zeros(N)
     r_opt = np.ones(N)
+
     for i in range(N):
         # Calculate the absolute start time of the current segment
         t_start = i * segment 
         
         # Pass the unmodified absolute timestamps, t_start, and d
-        r = pp.phase_pp_l1_shifted(sna_mat[:,i], run_mat[:,i], t_start, d, debug=debug)
+        r = pp.phase_pp_l1_shifted(sna_mat[:,i], run_mat[:,i], t_start, drift[i], debug=debug)
         
         r_opt[i] = r
-        d = d + segment * (1/r - 1)  # Update cumulative delay for the next segment
+        if i < N-1:  # No need to calculate drift for the last segment
+            drift[i+1] = drift[i] + segment * (1/r - 1)  # Update cumulative delay for the next segment
+
+
         if debug:
-            print(f"Segment {i+1}/{N} - Optimal Ratio: {r:.2f}, Cumulative Delay: {d:.3f} sec\n")
+            print(f"Segment {i+1}/{N} - Optimal Ratio: {r:.2f}, Cumulative Delay: {drift[i]:.3f} sec\n")
 
 
     # Calculate and print the true global error
@@ -229,6 +233,13 @@ def process_music(song_path, spm_array):
     print(f"~~ Average Segment Latency: {(end-start)/N:.3f} sec ~~\n")
     print(f"~~ Elapsed Time: {(end-start):.3f} sec ~~")
     print("~~ END OF PROGRAM ~~\n")
+    
+    # Return metadata for the UI
+    return {
+        'drift_array': drift.tolist(),
+        'r_opt': r_opt.tolist(),
+        'segment_duration': segment
+    }
 
 
 if __name__ == '__main__':

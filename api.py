@@ -82,6 +82,7 @@ def start_run():
     # Pass the song_name and spm_array to your algorithm!
     algo_thread = threading.Thread(target=process_music, args=(song_path, spm_array))
     algo_thread.start()
+    algo_thread.join()  # Block until the thread completes
     
     # 3. Calculate specs
     starting_specs = calculate_syncrun_spm(height, speeds_list[0])

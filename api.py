@@ -59,7 +59,7 @@ def start_run():
     height = data.get('height_cm', 175)
     interval_sec = data.get('interval_sec', 60)
     speeds_list = data.get('speeds_list', [10.0]) 
-    song_name = data.get('song_name', 'Seven Nation Army') # Added Song Name!
+    song_path = data.get('song_path', 'static/songs/Seven_Nation_Army.mp3') # Added Song Path!
     
     # 1. Generate your 2.5-second chunk array
     spm_array = generate_chunked_array_manual(height, speeds_list, interval_sec)
@@ -73,7 +73,7 @@ def start_run():
 
     # 2. TRIGGER YOUR ALGORITHM IN THE BACKGROUND
     # Pass the song_name and spm_array to your algorithm!
-    # algo_thread = threading.Thread(target=process_music, args=(song_name, spm_array,))
+    algo_thread = threading.Thread(target=process_music, args=(song_path, spm_array))
     # algo_thread.start()
     
     # 3. Calculate specs

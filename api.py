@@ -16,6 +16,12 @@ import os # Added to handle folders
 app = Flask(__name__, static_folder='static') # Added static_folder for audio streaming
 CORS(app)
 
+# Dictionary mapping song names to their file paths
+SONGS = {
+    'Seven Nation Army': 'songs/Seven Nation Army.mp3',
+    'Dancing Queen': 'songs/Dancing Queen.mp3',
+}
+
 def calculate_syncrun_spm(height_cm, speed_kmh):
     if height_cm <= 0 or speed_kmh <= 0:
         return {"spm": 0, "pulse_interval_ms": 0}
@@ -59,8 +65,9 @@ def start_run():
     height = data.get('height_cm', 175)
     interval_sec = data.get('interval_sec', 60)
     speeds_list = data.get('speeds_list', [10.0]) 
-    song_path = data.get('song_path', 'static/songs/Seven_Nation_Army.mp3') # Added Song Path!
-    
+    song_name = data.get('song_name', 'Seven Nation Army') # Added Song Name!
+    song_path = SONGS.get(song_name, 'songs/Seven Nation Army.mp3') # Use the dictionary to get the song path
+
     # 1. Generate your 2.5-second chunk array
     spm_array = generate_chunked_array_manual(height, speeds_list, interval_sec)
     
@@ -74,11 +81,11 @@ def start_run():
     # 2. TRIGGER YOUR ALGORITHM IN THE BACKGROUND
     # Pass the song_name and spm_array to your algorithm!
     algo_thread = threading.Thread(target=process_music, args=(song_path, spm_array))
-    # algo_thread.start()
+    algo_thread.start()
     
     # 3. Calculate specs
     starting_specs = calculate_syncrun_spm(height, speeds_list[0])
-    processed_audio_url = "http://127.0.0.1:5000/static/processed_output.mp3"
+    processed_audio_url = "http://127.0.0.1:5000/static/processed_output.wav"
     
     return jsonify({
         "status": "Algorithm Started",

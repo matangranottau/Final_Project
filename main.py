@@ -110,7 +110,7 @@ def process_music(song_path, spm_array):
     ########## TSM ##########
     #===================================
 
-    output_dir = "output"
+    output_dir = "static"
     os.makedirs(output_dir, exist_ok=True)
 
     # Calculate exactly how many chunks the song contains
@@ -219,7 +219,7 @@ def process_music(song_path, spm_array):
     print("Done! Go listen to the tempo ramp up and down.")
 
     final_song_clicked = add_clicks(final_song, run_steps, sna_sr)
-    save_audio(os.path.join(output_dir, "Dynamic_Runner_Song_Clicked.wav"), final_song_clicked, sna_sr)
+    save_audio(os.path.join(output_dir, "processed_output.wav"), final_song_clicked, sna_sr)
 
     #===================================
     ########## End of Simulation #######

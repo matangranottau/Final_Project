@@ -79,7 +79,8 @@ class _InputScreenState extends State<InputScreen> {
               mode: _selectedMode,
               intervalDurationSec: _intervalDurationSec,
               songName: _selectedSong,
-              processedAudioUrl: data["processed_audio_url"], // Receiving the URL
+              processedAudioUrl: data["processed_audio_url"],
+              intervals: List<Map<String, dynamic>>.from(data["intervals"] ?? []),
             ),
           ),
         );
@@ -271,6 +272,7 @@ class PulseScreen extends StatefulWidget {
   final String songName; // Needed for display
   final int intervalDurationSec;
   final String processedAudioUrl; // Needed for streaming
+  final List<Map<String, dynamic>> intervals; // NEW: Pre-calculated intervals
 
   const PulseScreen({
     super.key, 
@@ -282,6 +284,7 @@ class PulseScreen extends StatefulWidget {
     required this.songName,
     required this.intervalDurationSec,
     required this.processedAudioUrl,
+    required this.intervals,
   });
 
   @override
@@ -293,6 +296,7 @@ class _PulseScreenState extends State<PulseScreen> with SingleTickerProviderStat
   late Animation<double> _scaleAnimation;
   late AudioPlayer _audioPlayer; // AudioPlayer is back!
   Timer? _uiSyncTimer;
+  Timer? _positionUpdateTimer; // NEW: Track audio position
 
   late int _currentSpm;
   late int _currentIntervalMs;
@@ -313,6 +317,33 @@ class _PulseScreenState extends State<PulseScreen> with SingleTickerProviderStat
     if (widget.mode == 'Interval Practice' && widget.speedsList.length > 1) {
       _startUiSyncTimer();
     }
+    
+    // NEW: Start tracking audio position for interval switching
+    _startIntervalTracker();
+  }
+
+  // NEW: Track audio playback position and update SPM from intervals
+  void _startIntervalTracker() {
+    _positionUpdateTimer = Timer.periodic(Duration(milliseconds: 100), (timer) async {
+      final currentPosition = await _audioPlayer.getCurrentPosition();
+      
+      if (currentPosition != null) {
+        int currentTimeMs = currentPosition.inMilliseconds;
+        
+        // Find which interval we're in
+        for (var interval in widget.intervals) {
+          if (currentTimeMs >= interval['start_time_ms'] && 
+              currentTimeMs < interval['end_time_ms']) {
+            if (_currentSpm != interval['spm']) {
+              setState(() {
+                _currentSpm = interval['spm'];
+              });
+            }
+            break;
+          }
+        }
+      }
+    });
   }
 
   void _setupAnimation() {
@@ -360,6 +391,7 @@ class _PulseScreenState extends State<PulseScreen> with SingleTickerProviderStat
 
   void _haltRun() {
     _uiSyncTimer?.cancel();
+    _positionUpdateTimer?.cancel(); // NEW: Cancel position tracking
     _audioPlayer.stop(); // Stops the music
     if (mounted) Navigator.pop(context);   
   }
@@ -368,6 +400,7 @@ class _PulseScreenState extends State<PulseScreen> with SingleTickerProviderStat
   void dispose() {
     _controller.dispose();
     _uiSyncTimer?.cancel();
+    _positionUpdateTimer?.cancel(); // NEW: Clean up position timer
     _audioPlayer.dispose(); // Cleans up the audio player
     super.dispose();
   }

@@ -41,21 +41,21 @@ def process_and_plot(song_path, save_dir):
     # Plot 1: Original
     plt.subplot(3, 1, 1)
     plt.pcolormesh(t, f, mag_db, cmap=cmap_style, vmin=vmin, vmax=vmax)
-    plt.title('Original Spectrogram')
+    plt.title('Original Spectrogram', fontsize=16, fontweight='bold')
     plt.ylabel('Frequency [Hz]')
     plt.colorbar(format='%+2.0f dB', label='Magnitude [dB]')
     
     # Plot 2: Harmonic
     plt.subplot(3, 1, 2)
     plt.pcolormesh(t, f, harm_db, cmap=cmap_style, vmin=vmin, vmax=vmax)
-    plt.title('Harmonic Component')
+    plt.title('Harmonic Component', fontsize=16, fontweight='bold')
     plt.ylabel('Frequency [Hz]')
     plt.colorbar(format='%+2.0f dB', label='Magnitude [dB]')
     
     # Plot 3: Percussive
     plt.subplot(3, 1, 3)
     plt.pcolormesh(t, f, perc_db, cmap=cmap_style, vmin=vmin, vmax=vmax)
-    plt.title('Percussive Component')
+    plt.title('Percussive Component', fontsize=16, fontweight='bold')
     plt.xlabel('Time [sec]')
     plt.ylabel('Frequency [Hz]')
     plt.colorbar(format='%+2.0f dB', label='Magnitude [dB]')

@@ -225,6 +225,10 @@ def process_music(song_path, spm_array):
     final_song_clicked = add_clicks(final_song, run_steps, sna_sr)
     save_audio(os.path.join(output_dir, "processed_output.wav"), final_song_clicked, sna_sr)
 
+    
+    np.save('run_steps.npy', run_steps)
+    print("Saving run step timestamps to run_steps.npy for UI use...")
+
     #===================================
     ########## End of Simulation #######
     #===================================

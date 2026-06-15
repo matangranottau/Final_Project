@@ -14,7 +14,7 @@ def save_audio(file_path, x, sr):
         x = x / (max_val + 1e-10)
     sf.write(file_path, x, sr)
 
-def add_clicks(signal, beats, sr, magnitude=10, click_ms = 2, click_decay = 4):
+def add_clicks(signal, beats, sr, magnitude=5, click_ms = 2, click_decay = 4):
     # Convert beat times (in seconds) to sample indices
     click_samples = np.round(beats * sr).astype(int)
     click_samples = click_samples[(click_samples >= 0) & (click_samples < len(signal))]
